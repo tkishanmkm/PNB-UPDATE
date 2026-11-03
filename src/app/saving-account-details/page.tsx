@@ -20,20 +20,17 @@ import type { Transaction } from "@/lib/types";
 import { formatCurrency } from "@/lib/utils";
 import { RupeeIcon } from "@/components/rupee-icon";
 
-const BalanceDetailRow = ({ label, value }: { label: string; value: number }) => {
-    const { state } = useAppContext();
-    return (
-        <div className="flex justify-between items-center py-1">
-            <div className="flex items-center gap-1.5">
-                <span className="text-xs text-gray-600">{label}</span>
-                <Info className="h-3.5 w-3.5 text-gray-400" />
-            </div>
-            <span className="font-semibold text-sm text-gray-800 flex items-center tracking-tighter">
-                <RupeeIcon className="w-3.5 h-3.5 mr-0.5" /> {formatCurrency(value)}
-            </span>
+const BalanceDetailRow = ({ label, value }: { label: string; value: number }) => (
+    <div className="flex items-center justify-between gap-3 py-1">
+        <div className="flex min-w-0 items-center gap-1.5">
+            <span className="text-xs text-gray-600">{label}</span>
+            <Info className="h-3.5 w-3.5 shrink-0 text-gray-400" />
         </div>
-    );
-};
+        <span className="flex shrink-0 items-center font-semibold text-sm tracking-tighter text-gray-800">
+            <RupeeIcon className="mr-0.5 h-3.5 w-3.5" /> {formatCurrency(value)}
+        </span>
+    </div>
+);
 
 
 const TransactionItem = ({ transaction }: { transaction: Transaction }) => {
@@ -63,9 +60,17 @@ export default function SavingAccountDetailsPage() {
     if (!state) return null;
 
     const account = state.accounts[0];
+    if (!account) {
+        return (
+            <div className="pnb-page flex min-h-screen flex-col items-center justify-center gap-3 p-6 text-center">
+                <p className="text-sm text-gray-600">No account is available. Import a valid app backup or add an account in Settings.</p>
+                <Link href="/settings"><Button>Open Settings</Button></Link>
+            </div>
+        );
+    }
     const { transactions, user } = state;
     const formattedBalance = formatCurrency(account.balance);
-    const accountHolderParts = user.name.split(" ");
+    const accountHolderParts = (user.name || "Customer").split(" ");
     const firstName = accountHolderParts[0];
     const lastName = accountHolderParts.slice(1).join(" ");
     
@@ -98,7 +103,9 @@ export default function SavingAccountDetailsPage() {
         ? account.averageQuarterlyBalance
         : automaticQuarterBalance;
 
-    const last10Transactions = [...transactions]
+    const last10Transactions = transactions
+        .filter(transaction => transaction.accountId === account.id)
+        .slice()
         .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
         .slice(0, 10);
 
@@ -186,9 +193,11 @@ export default function SavingAccountDetailsPage() {
                 <div className="px-1 pt-2">
                     <h3 className="text-xs font-bold text-primary tracking-wider">LAST 10 TRANSACTIONS</h3>
                     <div className="divide-y mt-1">
-                        {last10Transactions.map((tx, index) => (
+                        {last10Transactions.length > 0 ? last10Transactions.map((tx, index) => (
                             <TransactionItem key={`${tx.id}-${index}`} transaction={tx} />
-                        ))}
+                        )) : (
+                            <p className="py-5 text-center text-xs text-gray-500">No recent transactions for this account.</p>
+                        )}
                     </div>
                 </div>
 

@@ -27,20 +27,26 @@ export default function AllAccountsPage() {
           <p className="mt-1 text-xs text-gray-500">View your linked PNB accounts and balances</p>
         </div>
         <div className="space-y-3">
-        {state.accounts.map((account) => (
+        {state.accounts.length > 0 ? state.accounts.map((account) => (
           <Card key={account.id} className="overflow-hidden rounded-2xl border border-rose-100 shadow-sm">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-lg font-semibold">{account.type} Account</CardTitle>
               <Banknote className="h-6 w-6 text-primary" />
             </CardHeader>
             <CardContent>
-              <p className="text-sm text-muted-foreground">{account.accountNumber}</p>
-              <p className="text-2xl font-bold font-headline mt-2 flex items-center tracking-tighter">
-                <RupeeIcon className="h-5 w-5 mr-0.5" /> {formatCurrency(account.balance)}
+              <p className="break-all text-sm text-muted-foreground">{account.accountNumber || 'Account number not set'}</p>
+              <p className="mt-2 flex items-center text-2xl font-bold font-headline tracking-tighter">
+                <RupeeIcon className="mr-0.5 h-5 w-5" /> {formatCurrency(account.balance)}
               </p>
             </CardContent>
           </Card>
-        ))}
+        )) : (
+          <div className="rounded-2xl border border-dashed border-rose-200 bg-white p-6 text-center">
+            <p className="text-sm font-semibold text-gray-700">No accounts available</p>
+            <p className="mt-1 text-xs text-gray-500">Import a valid app backup or add account details in Settings.</p>
+            <Link href="/settings" className="mt-4 inline-flex rounded-xl bg-primary px-5 py-3 text-sm font-semibold text-white">Open Settings</Link>
+          </div>
+        )}
         </div>
       </main>
     </div>

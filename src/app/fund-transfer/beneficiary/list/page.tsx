@@ -4,7 +4,7 @@
 import React, { useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
-import { Search, Plus, ArrowLeft, Home, Landmark } from 'lucide-react';
+import { Search, Plus, ArrowLeft, Home, Landmark, ChevronRight } from 'lucide-react';
 import Link from 'next/link';
 
 import { useAppContext } from '@/hooks/use-app-store';
@@ -13,7 +13,6 @@ import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose } from "@/components/ui/dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import type { Payee } from "@/lib/types";
-import { RupeeIcon } from '@/components/rupee-icon';
 
 export default function BeneficiaryListPage() {
     const { state, dispatch } = useAppContext();
@@ -37,7 +36,12 @@ export default function BeneficiaryListPage() {
     const handleAddPayee = (values: Payee) => {
         const newPayee: Payee = {
             ...values,
-            id: values.id || `payee-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`, // Ensure ID is never empty
+            name: values.name.trim(),
+            nickname: values.nickname?.trim() || "",
+            bank: values.bank.trim(),
+            accountNumber: values.accountNumber.trim(),
+            ifsc: values.ifsc.trim().toUpperCase(),
+            id: values.id || `payee-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
         };
         dispatch({ type: 'ADD_PAYEE', payload: newPayee });
         // Reset the form with a new unique ID for the next entry
@@ -45,10 +49,6 @@ export default function BeneficiaryListPage() {
         setIsAddDialogOpen(false);
     };
     
-    const handleSelectPayee = (payee: Payee) => {
-        router.push(`/fund-transfer/beneficiary/details/${payee.id}`);
-    };
-
     return (
         <div className="pnb-page flex flex-col min-h-screen bg-gray-50">
             <header className="pnb-page-header bg-primary text-primary-foreground p-4 flex items-center justify-between shadow-md sticky top-0 z-20">
@@ -84,20 +84,20 @@ export default function BeneficiaryListPage() {
                         </DialogHeader>
                         <Form {...form}>
                             <form onSubmit={form.handleSubmit(handleAddPayee)} className="space-y-4">
-                                <FormField control={form.control} name="name" render={({ field }) => (
-                                    <FormItem><FormLabel>Payee Name</FormLabel><FormControl><Input placeholder="John Doe" {...field} /></FormControl><FormMessage /></FormItem>
+                                <FormField control={form.control} name="name" rules={{ required: "Payee name is required." }} render={({ field }) => (
+                                    <FormItem><FormLabel>Payee Name</FormLabel><FormControl><Input placeholder="John Doe" autoComplete="name" maxLength={70} {...field} /></FormControl><FormMessage /></FormItem>
                                 )}/>
                                 <FormField control={form.control} name="nickname" render={({ field }) => (
                                     <FormItem><FormLabel>Nickname (Optional)</FormLabel><FormControl><Input placeholder="e.g., Landlord" {...field} /></FormControl><FormMessage /></FormItem>
                                 )}/>
-                                 <FormField control={form.control} name="accountNumber" render={({ field }) => (
-                                    <FormItem><FormLabel>Account Number</FormLabel><FormControl><Input placeholder="Enter account number" {...field} /></FormControl><FormMessage /></FormItem>
+                                 <FormField control={form.control} name="accountNumber" rules={{ required: "Account number is required.", pattern: { value: /^\d{6,24}$/, message: "Enter a valid numeric account number." } }} render={({ field }) => (
+                                    <FormItem><FormLabel>Account Number</FormLabel><FormControl><Input placeholder="Enter account number" inputMode="numeric" autoComplete="off" maxLength={24} {...field} onChange={event => field.onChange(event.target.value.replace(/\D/g, "").slice(0, 24))} /></FormControl><FormMessage /></FormItem>
                                 )}/>
-                                <FormField control={form.control} name="bank" render={({ field }) => (
-                                    <FormItem><FormLabel>Bank Name</FormLabel><FormControl><Input placeholder="e.g., PNB Bank" {...field} /></FormControl><FormMessage /></FormItem>
+                                <FormField control={form.control} name="bank" rules={{ required: "Bank name is required." }} render={({ field }) => (
+                                    <FormItem><FormLabel>Bank Name</FormLabel><FormControl><Input placeholder="e.g., PNB Bank" maxLength={70} {...field} /></FormControl><FormMessage /></FormItem>
                                 )}/>
-                                <FormField control={form.control} name="ifsc" render={({ field }) => (
-                                    <FormItem><FormLabel>IFSC Code</FormLabel><FormControl><Input placeholder="Enter 11-digit IFSC" {...field} /></FormControl><FormMessage /></FormItem>
+                                <FormField control={form.control} name="ifsc" rules={{ required: "IFSC code is required.", pattern: { value: /^[A-Z]{4}0[A-Z0-9]{6}$/, message: "Enter a valid 11-character IFSC code." } }} render={({ field }) => (
+                                    <FormItem><FormLabel>IFSC Code</FormLabel><FormControl><Input placeholder="Enter 11-digit IFSC" autoCapitalize="characters" maxLength={11} {...field} onChange={event => field.onChange(event.target.value.toUpperCase().slice(0, 11))} /></FormControl><FormMessage /></FormItem>
                                 )}/>
                                 <DialogFooter>
                                     <DialogClose asChild><Button type="button" variant="secondary">Cancel</Button></DialogClose>
@@ -111,24 +111,20 @@ export default function BeneficiaryListPage() {
                 <div className="space-y-2">
                     {filteredPayees.length > 0 ? (
                         filteredPayees.map(payee => (
-                           <div 
+                           <Link
                                 key={payee.id}
-                                onClick={() => handleSelectPayee(payee)}
-                                className="flex items-center p-3 hover:bg-gray-100 cursor-pointer rounded-lg bg-white border-b"
+                                href={`/fund-transfer/beneficiary/details/${payee.id}`}
+                                className="flex min-w-0 items-center gap-3 rounded-xl border border-rose-100 bg-white p-3 transition-colors hover:bg-rose-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                             >
-                                <div className="flex items-center justify-center h-10 w-10 rounded-full bg-gray-100 mr-4">
+                                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-rose-50">
                                     <Landmark className="h-5 w-5 text-primary" />
                                 </div>
-                                <div className="flex-1">
-                                    <p className="font-semibold text-sm">{payee.nickname || payee.name}</p>
-                                    <p className="text-xs text-gray-500">{payee.bank} ....{payee.accountNumber.slice(-4)}</p>
+                                <div className="min-w-0 flex-1">
+                                    <p className="truncate text-sm font-semibold">{payee.nickname || payee.name}</p>
+                                    <p className="truncate text-xs text-gray-500">{payee.bank || 'Bank'} ····{payee.accountNumber.slice(-4)}</p>
                                 </div>
-                                <div className="text-right">
-                                    <p className="font-semibold text-sm flex items-center justify-end tracking-tighter"><RupeeIcon className="w-3 h-3 mr-0.5" /> 10,00,000.00</p>
-                                    <p className="text-xs text-gray-500">Daily Limit</p>
-                                    <p className="text-xs text-gray-500">10 Per Day</p>
-                                </div>
-                            </div>
+                                <ChevronRight className="h-5 w-5 shrink-0 text-gray-400" />
+                            </Link>
                         ))
                     ) : (
                         <p className="p-4 text-center text-gray-500">No payees found.</p>

@@ -6,16 +6,17 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAppContext } from '@/hooks/use-app-store';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { ArrowLeft, Home, UserCircle, Landmark } from 'lucide-react';
-import { Separator } from '@/components/ui/separator';
 
 const DetailRow = ({ label, value }: { label: string; value: string | undefined }) => (
-    <div className="flex justify-between items-center py-3">
-        <span className="text-sm text-muted-foreground">{label}</span>
-        <span className="text-sm font-semibold text-right break-all">{value || '-'}</span>
+    <div className="flex items-start justify-between gap-4 py-3">
+        <span className="shrink-0 text-sm text-muted-foreground">{label}</span>
+        <span className="min-w-0 max-w-[68%] break-words text-right text-sm font-semibold">{value?.trim() || '-'}</span>
     </div>
 );
+
+const joinAvailableDetails = (...values: Array<string | undefined>) =>
+    values.map(value => value?.trim()).filter((value): value is string => Boolean(value)).join(', ') || '-';
 
 const maskEmail = (email: string) => {
     if (!email) return '';
@@ -35,6 +36,15 @@ export default function MyAccountPage() {
     const { state } = useAppContext();
     const { user, accounts } = state;
     const account = accounts[0];
+
+    if (!account) {
+        return (
+            <div className="pnb-page flex min-h-screen flex-col items-center justify-center gap-3 p-6 text-center">
+                <p className="text-sm text-gray-600">No account details are available. Import a backup or add account details in Settings.</p>
+                <Link href="/settings" className="rounded-xl bg-primary px-5 py-3 text-sm font-semibold text-white">Open Settings</Link>
+            </div>
+        );
+    }
 
     return (
         <div className="pnb-page flex flex-col min-h-screen bg-gray-50">
@@ -62,7 +72,7 @@ export default function MyAccountPage() {
                         <DetailRow label="Date of Birth" value={user.dob} />
                         <DetailRow label="Mobile Number" value={maskMobile(user.mobileNumber)} />
                         <DetailRow label="Email ID" value={maskEmail(user.email)} />
-                        <DetailRow label="Customer Address" value={`${account.customerAddress}, ${account.customerCity}, ${account.customerPin}`} />
+                        <DetailRow label="Customer Address" value={joinAvailableDetails(account.customerAddress, account.customerCity, account.customerPin)} />
                     </CardContent>
                 </Card>
 
@@ -79,7 +89,7 @@ export default function MyAccountPage() {
                         <DetailRow label="Account Status" value={account.status} />
                         <DetailRow label="UPI ID" value={account.upiId} />
                         <DetailRow label="IFSC Code" value={account.ifsc} />
-                        <DetailRow label="Branch Address" value={`${account.branchAddress}, ${account.branchCity}, ${account.branchPin}`} />
+                        <DetailRow label="Branch Address" value={joinAvailableDetails(account.branchAddress, account.branchCity, account.branchPin)} />
                     </CardContent>
                 </Card>
             </main>

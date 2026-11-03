@@ -56,13 +56,13 @@ export default function BeneficiaryTransferPage() {
                     {/* Transfer To */}
                     <div>
                         <p className="text-xs text-muted-foreground px-1 mb-1">Transfer to</p>
-                        <div 
-                            className="bg-white p-3 rounded-lg border flex justify-between items-center cursor-pointer"
-                            onClick={() => router.push('/fund-transfer/beneficiary/list')}
+                        <Link
+                            href="/fund-transfer/beneficiary/list"
+                            className="flex items-center justify-between rounded-lg border bg-white p-3 transition-colors hover:bg-rose-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                         >
                             <p className="text-sm text-gray-700">Select Beneficiary</p>
                             <ChevronDown className="h-5 w-5 text-muted-foreground" />
-                        </div>
+                        </Link>
                     </div>
                 </div>
             </main>

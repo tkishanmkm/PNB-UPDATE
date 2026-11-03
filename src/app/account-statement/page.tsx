@@ -4,7 +4,7 @@
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from 'next/link';
-import { format, subDays, subMonths, startOfDay } from "date-fns";
+import { format, subDays, subMonths } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
@@ -33,7 +33,7 @@ export default function AccountStatementPage() {
       const today = new Date();
       to = format(today, 'yyyy-MM-dd');
       if (quickPeriod === 'week') {
-        from = format(subDays(today, 7), 'yyyy-MM-dd');
+        from = format(subDays(today, 6), 'yyyy-MM-dd');
       } else { // month
         from = format(subMonths(today, 1), 'yyyy-MM-dd');
       }
