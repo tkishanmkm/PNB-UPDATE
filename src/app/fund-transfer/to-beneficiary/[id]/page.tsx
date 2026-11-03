@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter, useParams } from "next/navigation";
 import { useAppContext } from "@/hooks/use-app-store";
@@ -36,43 +36,68 @@ export default function TransferToBeneficiaryPage() {
     const [selectedPayeeId, setSelectedPayeeId] = useState<string | undefined>(initialPayeeId);
     const [amount, setAmount] = useState("");
     const [remarks, setRemarks] = useState("");
-    const [transferMode, setTransferMode] = useState("imps");
+    const [transferMode, setTransferMode] = useState<"imps" | "neft" | "rtgs">("imps");
     const [scheduleTransfer, setScheduleTransfer] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const submitGuard = useRef(false);
 
     if (!state) return null;
 
     const { accounts, payees, user, settings } = state;
     const account = accounts[0];
     const appLogo = settings.appLogo;
-    const formattedBalance = formatCurrency(account.balance);
     const selectedPayee = payees.find(p => p.id === selectedPayeeId);
+    const formattedBalance = formatCurrency(account?.balance ?? 0);
 
     const handleViewSummary = () => {
-        const transferAmount = parseFloat(amount);
-        if (!selectedPayeeId) {
-            toast({ variant: 'destructive', title: 'No Beneficiary', description: 'Please select a beneficiary to proceed.' });
+        if (submitGuard.current) return;
+        const transferAmount = Number(amount);
+        if (!account) {
+            toast({ variant: 'destructive', title: 'No account found', description: 'Add or import an account before making a transfer.' });
             return;
         }
-        if (isNaN(transferAmount) || transferAmount <= 0) {
+        if (!selectedPayeeId || !selectedPayee) {
+            toast({ variant: 'destructive', title: 'No Beneficiary', description: 'Please select a valid beneficiary to proceed.' });
+            return;
+        }
+        if (!Number.isFinite(transferAmount) || transferAmount <= 0 || Math.round(transferAmount * 100) !== transferAmount * 100) {
             toast({ variant: 'destructive', title: 'Invalid Amount', description: 'Please enter a valid amount.' });
             return;
         }
-        if (transferAmount > account.balance) {
-            toast({ variant: 'destructive', title: 'Insufficient Funds', description: 'You do not have enough balance for this transfer.' });
+        const amountPaise = Math.round(transferAmount * 100);
+        const estimatedChargePaise = transferMode === 'imps'
+            ? (amountPaise <= 100000 ? 0 : amountPaise <= 10000000 ? 590 : 1180)
+            : 0;
+        if (amountPaise + estimatedChargePaise > Math.round(account.balance * 100)) {
+            toast({ variant: 'destructive', title: 'Insufficient Funds', description: 'Your balance does not cover the transfer and applicable charge.' });
             return;
         }
 
+        const transferId = `TXN${Date.now()}-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
+        submitGuard.current = true;
+        setIsSubmitting(true);
         dispatch({
             type: 'SET_TRANSFER_DETAILS',
             payload: {
                 payeeId: selectedPayeeId,
-                amount: transferAmount,
-                remarks
+                amount: Math.round(transferAmount * 100) / 100,
+                remarks: remarks.trim(),
+                transferId,
+                transferMode,
             }
         });
         router.push(`/fund-transfer/confirm/${selectedPayeeId}`);
     };
 
+
+    if (!account) {
+        return (
+            <div className="pnb-page flex min-h-screen flex-col items-center justify-center gap-3 p-6 text-center">
+                <p className="text-sm text-gray-600">No account is available. Add or import an account before making a transfer.</p>
+                <Link href="/settings" className="rounded-xl bg-primary px-5 py-3 text-sm font-semibold text-white">Open Settings</Link>
+            </div>
+        );
+    }
 
     return (
         <div className="pnb-page flex flex-col min-h-screen bg-gray-50">
@@ -139,7 +164,11 @@ export default function TransferToBeneficiaryPage() {
                                 </Label>
                                 <Input 
                                     id="amount" 
-                                    type="number" 
+                                    type="number"
+                                    inputMode="decimal"
+                                    min="0.01"
+                                    max={account.balance}
+                                    step="0.01"
                                     placeholder="Enter amount"
                                     value={amount}
                                     onChange={(e) => setAmount(e.target.value)}
@@ -149,7 +178,7 @@ export default function TransferToBeneficiaryPage() {
 
                              <div>
                                 <Label className="text-xs text-gray-500">Transfer Mode</Label>
-                                 <RadioGroup value={transferMode} onValueChange={setTransferMode} className="grid grid-cols-3 gap-2 mt-2">
+                                 <RadioGroup value={transferMode} onValueChange={value => setTransferMode(value as "imps" | "neft" | "rtgs")} className="grid grid-cols-3 gap-2 mt-2">
                                     <div className="flex items-center">
                                         <RadioGroupItem value="neft" id="neft" className="peer sr-only" />
                                         <Label htmlFor="neft" className="w-full text-center p-2 rounded-md border text-sm peer-data-[state=checked]:bg-primary peer-data-[state=checked]:text-white cursor-pointer transition-colors">NEFT</Label>
@@ -164,6 +193,7 @@ export default function TransferToBeneficiaryPage() {
                                     </div>
                                 </RadioGroup>
                                 <p className="text-xs text-gray-500 mt-2 flex items-center tracking-tighter">Max per transaction <RupeeIcon className="w-3 h-3 mx-0.5" />5,00,000, Max per day <RupeeIcon className="w-3 h-3 mx-0.5" />5,00,000</p>
+                                {transferMode !== "imps" && <p className="mt-1 text-[11px] leading-4 text-amber-700">NEFT/RTGS bank charges are not calculated by this local prototype.</p>}
                             </div>
 
                              <div>
@@ -216,10 +246,10 @@ export default function TransferToBeneficiaryPage() {
                     <Button 
                         className="w-full" 
                         size="lg" 
-                        disabled={!selectedPayeeId || !amount}
+                        disabled={!selectedPayeeId || !amount || isSubmitting}
                         onClick={handleViewSummary}
                     >
-                        View Summary
+                        {isSubmitting ? "Continuing..." : "View Summary"}
                     </Button>
                 </div>
             </footer>

@@ -28,7 +28,7 @@ const DetailRow = ({ label, children }: { label: string; children: React.ReactNo
 function ConfirmTransferPage() {
   const router = useRouter();
   const params = useParams();
-  const { state, dispatch } = useAppContext();
+  const { state } = useAppContext();
   const { toast } = useToast();
   
   const payeeId = params.id as string;
@@ -48,15 +48,13 @@ function ConfirmTransferPage() {
   }, [step]);
   
   useEffect(() => {
-    if (!payee || !currentTransfer.amount) {
-        if (typeof window !== 'undefined') {
-          router.push('/fund-transfer');
-        }
+    if (!payee || !account || !currentTransfer.amount || !currentTransfer.transferId) {
+        router.replace('/fund-transfer');
     }
-  }, [payee, currentTransfer, router]);
+  }, [payee, account, currentTransfer.amount, currentTransfer.transferId, router]);
 
 
-  if (!payee || !currentTransfer.amount) {
+  if (!payee || !account || !currentTransfer.amount || !currentTransfer.transferId) {
     return <div className="p-4">Transfer details are missing. Redirecting...</div>;
   }
   
@@ -84,6 +82,11 @@ function ConfirmTransferPage() {
   const numericAmount = currentTransfer.amount;
   const amountInWords = numberToWords.toWords(numericAmount).replace(/\b\w/g, (l: string) => l.toUpperCase()) + ' Only';
   const formattedAmount = formatCurrency(numericAmount);
+  const selectedTransferMode = currentTransfer.transferMode || 'imps';
+  const chargeAmount = selectedTransferMode === 'imps'
+    ? (numericAmount <= 1000 ? 0 : numericAmount <= 100000 ? 5.9 : 11.8)
+    : 0;
+  const totalDebitAmount = numericAmount + chargeAmount;
   const transferDate = new Date();
 
   const renderStep = () => {
@@ -116,7 +119,7 @@ function ConfirmTransferPage() {
                                 type="tel"
                                 inputMode="numeric"
                                 pattern="[0-9]*"
-                                autoComplete="one-time-code"
+                                autoComplete="off"
                                 maxLength={4}
                                 value={tpin}
                                 onChange={handleTpinChange}
@@ -173,8 +176,26 @@ function ConfirmTransferPage() {
                             </div>
                         </DetailRow>
 
+                        <DetailRow label="Bank charges">
+                            {selectedTransferMode === 'imps'
+                                ? <span className="font-semibold text-xs text-gray-800">{formatCurrency(chargeAmount)}</span>
+                                : <span className="max-w-40 text-[10px] leading-4 text-amber-700">Not calculated in this prototype</span>}
+                        </DetailRow>
+                        <DetailRow label="Total debit">
+                            <span className="font-bold text-sm text-gray-900">{formatCurrency(totalDebitAmount)}</span>
+                        </DetailRow>
+
                         <DetailRow label="Remarks">
                             <span className="font-semibold text-xs text-gray-800">{currentTransfer.remarks || '-'}</span>
+                        </DetailRow>
+
+                        <DetailRow label="Transfer mode">
+                            <div>
+                                <span className="font-semibold text-xs uppercase text-gray-800">{currentTransfer.transferMode || 'IMPS'}</span>
+                                {currentTransfer.transferMode && currentTransfer.transferMode !== 'imps' && (
+                                    <p className="mt-1 max-w-40 text-[10px] leading-4 text-amber-700">Mode-specific bank charges are not calculated by this local prototype.</p>
+                                )}
+                            </div>
                         </DetailRow>
 
                         <DetailRow label="Transfer date">

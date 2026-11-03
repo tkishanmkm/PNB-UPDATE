@@ -79,6 +79,31 @@ const appReducer = (state: AppState, action: Action): AppState => {
         saveStateToIndexedDB(newState).catch(err => console.error("Failed to save state to IndexedDB after updating account", err));
         return newState;
     }
+    case 'COMPLETE_TRANSFER': {
+        const { account, debit, charge } = action.payload;
+        const currentAccount = state.accounts.find(item => item.id === account.id);
+        if (!currentAccount || debit.accountId !== account.id || !debit.id) return state;
+
+        // The debit transaction id is the transfer id. A repeated completion
+        // cannot debit the same transfer twice, even after a route refresh.
+        if (state.transactions.some(transaction => transaction.id === debit.id)) {
+            // Preserve the transfer id until the receipt route has been reached;
+            // that lets a verification-page refresh resume to the same receipt.
+            return state;
+        }
+
+        const transactionsToAdd = [debit, ...(charge ? [charge] : [])]
+            .filter(transaction => !state.transactions.some(existing => existing.id === transaction.id))
+            .map(transaction => ({ ...transaction, accountId: account.id }));
+        const newState: AppState = {
+            ...state,
+            accounts: state.accounts.map(item => item.id === account.id ? { ...item, ...account } : item),
+            transactions: [...transactionsToAdd, ...state.transactions]
+                .sort((left, right) => new Date(right.date).getTime() - new Date(left.date).getTime()),
+        };
+        saveStateToIndexedDB(newState).catch(err => console.error("Failed to persist completed transfer", err));
+        return newState;
+    }
     case 'REPLACE_STATEMENT_DATA': {
         const { account, transactions } = action.payload;
         const newState: AppState = {

@@ -2,13 +2,13 @@
 
 import { useState, useCallback, Suspense, useRef, useEffect } from 'react';
 import Link from 'next/link';
-import { useRouter, useParams, useSearchParams } from 'next/navigation';
-import { Button } from '@/components/ui/button';
+import { useRouter, useParams } from 'next/navigation';
 import { ArrowLeft, Home } from 'lucide-react';
 import { useAppContext } from '@/hooks/use-app-store';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import Image from 'next/image';
+import type { Transaction } from '@/lib/types';
 
 const OtpIcon = ({ avatarUrl }: { avatarUrl: string }) => {
     return (
@@ -53,95 +53,157 @@ function VerifyTransfer() {
     const [showOtpPopup, setShowOtpPopup] = useState(false);
     const [currentOtp, setCurrentOtp] = useState("");
     const [isProcessing, setIsProcessing] = useState(false);
+    const processingRef = useRef(false);
+    const popupTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const account = state.accounts[0];
+    const transferId = currentTransfer.transferId;
+    const transferMode = currentTransfer.transferMode || 'imps';
+    const existingTransfer = transferId
+        ? state.transactions.find(transaction => transaction.id === transferId && transaction.type === 'debit')
+        : undefined;
+
+    const buildReceiptUrl = useCallback((referenceId: string, rrn: string) => {
+        const queryParams = new URLSearchParams({
+            payeeId: payee?.id || payeeId,
+            referenceId,
+            rrn,
+        });
+        return `/fund-transfer/success?${queryParams.toString()}`;
+    }, [payee, payeeId]);
 
     useEffect(() => {
-        if (!payee || !currentTransfer.amount) {
-            if (typeof window !== 'undefined') {
-              router.push('/fund-transfer');
-            }
+        if (existingTransfer && payee && existingTransfer.payeeId === payee.id) {
+            router.replace(buildReceiptUrl(existingTransfer.id, existingTransfer.reference || ''));
+            return;
         }
-    }, [payee, currentTransfer, router]);
+        if (!payee || !account || !Number.isFinite(currentTransfer.amount) || !currentTransfer.amount || !transferId) {
+            router.replace('/fund-transfer');
+        }
+    }, [existingTransfer, payee, account, currentTransfer.amount, transferId, router, buildReceiptUrl]);
 
     const generateOtp = useCallback(() => {
-        const newOtp = Math.floor(100000 + Math.random() * 900000).toString();
+        const values = new Uint32Array(1);
+        window.crypto.getRandomValues(values);
+        const newOtp = String(100000 + (values[0] % 900000));
         setCurrentOtp(newOtp);
-        // Log to console for testing purposes
-        console.log("Current Transaction OTP:", newOtp);
         return newOtp;
     }, []);
-    
-    const handleNavigationToSuccess = useCallback(() => {
-        const queryParams = new URLSearchParams({
-            payeeId: payee!.id,
-            amount: currentTransfer.amount!.toString(),
-            remarks: currentTransfer.remarks || '',
-            transferDate: new Date().toISOString(),
-            transferMode: 'IMPS'
-        }).toString();
-        router.push(`/fund-transfer/success?${queryParams}`);
-    }, [currentTransfer, payee, router]);
 
     const handleSubmit = useCallback((enteredOtp: string) => {
-        setIsProcessing(true);
-        if (enteredOtp === currentOtp) { 
-            toast({ title: "OTP Verified", description: "Processing transaction..." });
-            setTimeout(() => {
-                handleNavigationToSuccess();
-            }, 1000); // Simulate processing time
-        } else {
-            toast({
-                variant: 'destructive',
-                title: 'Incorrect OTP',
-                description: 'Please try again.',
-            });
+        if (processingRef.current) return;
+
+        if (enteredOtp !== currentOtp) {
+            toast({ variant: 'destructive', title: 'Incorrect OTP', description: 'Please try again.' });
             setOtp('');
-            setIsProcessing(false);
             otpInputRef.current?.focus();
+            return;
         }
-    }, [toast, currentOtp, handleNavigationToSuccess]);
+
+        const transferAmount = currentTransfer.amount;
+        const activeAccount = state.accounts.find(item => item.id === account?.id);
+        if (!payee || !activeAccount || !transferId || !Number.isFinite(transferAmount) || !transferAmount || transferAmount <= 0) {
+            toast({ variant: 'destructive', title: 'Transfer details unavailable', description: 'Return to the transfer form and review the details.' });
+            router.replace('/fund-transfer');
+            return;
+        }
+
+        const amountPaise = Math.round(transferAmount * 100);
+        // Keep the existing local IMPS charge bands; other selected modes do not
+        // inherit an IMPS charge in this UI prototype.
+        const chargePaise = transferMode === 'imps'
+            ? (amountPaise <= 100000 ? 0 : amountPaise <= 10000000 ? 590 : 1180)
+            : 0;
+        const balancePaise = Math.round(activeAccount.balance * 100);
+        if (amountPaise <= 0 || amountPaise + chargePaise > balancePaise) {
+            toast({ variant: 'destructive', title: 'Insufficient Funds', description: 'Your balance does not cover the transfer and applicable charge.' });
+            setOtp('');
+            otpInputRef.current?.focus();
+            return;
+        }
+
+        processingRef.current = true;
+        setIsProcessing(true);
+        setShowOtpPopup(false);
+        if (popupTimerRef.current) clearTimeout(popupTimerRef.current);
+
+        const completedAt = new Date().toISOString();
+        const rrnNumber = String(Math.floor(100000000000 + Math.random() * 900000000000));
+        const rrn = `${transferMode.toUpperCase()}/${rrnNumber}`;
+        const amount = amountPaise / 100;
+        const chargeAmount = chargePaise / 100;
+        const payeeFirstName = payee.name.split(' ')[0] || '';
+        const debit: Transaction = {
+            id: transferId,
+            accountId: activeAccount.id,
+            date: completedAt,
+            description: `${transferMode.toUpperCase()}-IN/${rrnNumber}/${payee.accountNumber}/${payeeFirstName}`,
+            amount: -amount,
+            type: 'debit',
+            category: 'Transfer',
+            reference: rrn,
+            payeeId: payee.id,
+            payee: payee.name,
+            remarks: currentTransfer.remarks || '',
+        };
+        const charge: Transaction | undefined = chargeAmount > 0 ? {
+            id: `${transferId}-CHG`,
+            accountId: activeAccount.id,
+            date: completedAt,
+            description: `${transferMode.toUpperCase()}-CHG/${rrnNumber}/${payee.accountNumber}/${payeeFirstName}`,
+            amount: -chargeAmount,
+            type: 'debit',
+            category: 'Bank Charges',
+            reference: `CHG/${rrnNumber}`,
+            remarks: `${transferMode.toUpperCase()} service charge`,
+        } : undefined;
+
+        dispatch({
+            type: 'COMPLETE_TRANSFER',
+            payload: {
+                account: { ...activeAccount, balance: (balancePaise - amountPaise - chargePaise) / 100 },
+                debit,
+                ...(charge ? { charge } : {}),
+            },
+        });
+        toast({ title: 'OTP Verified', description: 'Transfer recorded. Opening your receipt...' });
+        router.replace(buildReceiptUrl(transferId, rrn));
+    }, [currentOtp, toast, currentTransfer, state.accounts, account, payee, transferId, transferMode, dispatch, router, buildReceiptUrl]);
 
     const triggerOtpSequence = useCallback(() => {
-        const newOtp = generateOtp();
+        if (processingRef.current) return;
+        generateOtp();
         setCountdown(59);
-        setShowOtpPopup(true); 
-        
-        const hideTimer = setTimeout(() => {
-            setShowOtpPopup(false);
-        }, 5000);
-        return () => clearTimeout(hideTimer);
+        setShowOtpPopup(true);
+        if (popupTimerRef.current) clearTimeout(popupTimerRef.current);
+        popupTimerRef.current = setTimeout(() => setShowOtpPopup(false), 5000);
     }, [generateOtp]);
 
     useEffect(() => {
-        if (!payee || !currentTransfer.amount) return;
+        if (!payee || !account || !currentTransfer.amount || !transferId || existingTransfer) return;
 
-        const timer = setInterval(() => {
-            setCountdown(prev => (prev > 0 ? prev - 1 : 0));
-        }, 1000);
-
-        const showTimer = setTimeout(() => {
-           triggerOtpSequence();
-        }, 1000);
-
+        const timer = setInterval(() => setCountdown(previous => previous > 0 ? previous - 1 : 0), 1000);
+        const showTimer = setTimeout(triggerOtpSequence, 1000);
         otpInputRef.current?.focus();
-        
+
         return () => {
             clearInterval(timer);
             clearTimeout(showTimer);
+            if (popupTimerRef.current) clearTimeout(popupTimerRef.current);
         };
-    }, [triggerOtpSequence, payee, currentTransfer.amount]);
+    }, [triggerOtpSequence, payee, account, currentTransfer.amount, transferId, existingTransfer]);
 
     const handleOtpChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const value = e.target.value;
         if (/^\d{0,6}$/.test(value)) {
             setOtp(value);
-            if (value.length === 6) {
+            if (value.length === 6 && !isProcessing) {
                 handleSubmit(value);
             }
         }
     };
     
-    if (!payee || !currentTransfer.amount) {
-        return <div className="p-4">Transfer details are missing. Redirecting...</div>;
+    if (!payee || !account || !currentTransfer.amount || !transferId || existingTransfer) {
+        return <div className="p-4">Checking transfer status...</div>;
     }
     
     const otpDigits = otp.padEnd(6, ' ').split('');
@@ -163,7 +225,7 @@ function VerifyTransfer() {
 
             <main className="flex-1 flex flex-col justify-start items-start p-6 pt-12 text-left">
                 <div className="w-full">
-                    <p className="text-base text-gray-700 mb-2">OTP has been sent to your registered mobile number ******{user.mobileNumber.slice(-4)}</p>
+                    <p className="text-base text-gray-700 mb-2">OTP has been sent to your registered mobile number ******{(user.mobileNumber || '').slice(-4)}</p>
                     
                     <div 
                         className="relative flex justify-start items-center gap-3 my-8 cursor-text"
@@ -184,14 +246,15 @@ function VerifyTransfer() {
                             maxLength={6}
                             value={otp}
                             onChange={handleOtpChange}
-                            className="absolute inset-0 w-full h-full bg-transparent border-none outline-none text-transparent [caret-color:transparent]"
+                            disabled={isProcessing}
+                            className="absolute inset-0 h-full w-full border-none bg-transparent text-transparent outline-none [caret-color:transparent] disabled:cursor-wait"
                         />
                     </div>
                     
                     {countdown > 0 ? (
                         <p className="text-sm text-gray-500">Resend OTP will be enabled in {countdown}s</p>
                     ) : (
-                        <button className="text-sm font-semibold text-primary" onClick={triggerOtpSequence}>
+                        <button type="button" className="text-sm font-semibold text-primary disabled:cursor-not-allowed disabled:opacity-50" onClick={triggerOtpSequence} disabled={isProcessing}>
                             Resend OTP
                         </button>
                     )}

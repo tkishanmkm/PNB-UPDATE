@@ -157,6 +157,9 @@ export interface TransferDetails {
   payeeId?: string;
   amount?: number;
   remarks?: string;
+  /** Stable local idempotency key retained while a transfer is being verified. */
+  transferId?: string;
+  transferMode?: 'imps' | 'neft' | 'rtgs';
 }
 
 export type AppState = {
@@ -194,6 +197,7 @@ export type Action =
   | { type: 'UPDATE_TRANSACTION'; payload: UpdateTransactionPayload }
   | { type: 'UPDATE_USER'; payload: Partial<User> }
   | { type: 'UPDATE_ACCOUNT'; payload: AccountDetails }
+  | { type: 'COMPLETE_TRANSFER'; payload: { account: AccountDetails; debit: Transaction; charge?: Transaction } }
   | { type: 'ADD_ACCOUNT'; payload: AccountDetails }
   | { type: 'UPDATE_TRANSACTIONS'; payload: Transaction[] }
   | { type: 'REPLACE_STATEMENT_DATA'; payload: { account: AccountDetails; transactions: Transaction[] } }
