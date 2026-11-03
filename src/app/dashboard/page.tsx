@@ -4,11 +4,10 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Carousel, CarouselContent, CarouselItem } from "@/components/ui/carousel";
-import { Eye, EyeOff, BookOpen, UserPlus, CreditCard, ShoppingCart, Home, Briefcase, Tractor, UserCheck, Hand, Link2, Send, CheckCircle2, Contact, Users, CreditCard as CreditCardIcon, HandCoins, Menu, Search, LogOut, QrCode, Percent, Power, Banknote, Gift, Leaf, PercentSquare, Warehouse, Car, GraduationCap, RefreshCw, TrendingUp, Landmark, FileCheck, Umbrella } from "lucide-react";
+import { ChevronRight, Eye, EyeOff, BookOpen, UserPlus, CreditCard, ShoppingCart, Home, Briefcase, Tractor, Link2, Send, CheckCircle2, Contact, Users, CreditCard as CreditCardIcon, HandCoins, Menu, Search, LogOut, QrCode, Percent, Leaf, PercentSquare, Warehouse, Car, GraduationCap, RefreshCw, TrendingUp, Landmark, FileCheck, Umbrella } from "lucide-react";
 import { useAppContext } from "@/hooks/use-app-store";
 import { cn, formatCurrency } from "@/lib/utils";
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
@@ -130,14 +129,12 @@ function DashboardPageComponent() {
   const [showBalance, setShowBalance] = useState(false);
   const [currentSlide, setCurrentSlide] = useState(0);
   const { state, dispatch } = useAppContext();
-  const router = useRouter();
 
   const handleLogout = React.useCallback(() => {
     dispatch({ type: 'LOGOUT_PENDING' });
   }, [dispatch]);
 
   const account = state.accounts[0];
-  const { settings } = state;
 
   if (!account) {
     // Optional: Render a loading state or a message if no account is found
@@ -151,7 +148,7 @@ function DashboardPageComponent() {
           {items.map((item, index) => (
               <Link href={item.href || '#'} key={index} className="shrink-0">
                   <div className="flex flex-col items-center space-y-1 p-0.5">
-                      <div className={`flex items-center justify-center h-10 w-10 rounded-lg bg-gray-100`}>
+                      <div className={`flex items-center justify-center h-11 w-11 rounded-2xl bg-rose-50`}>
                          <DynamicIcon iconKey={item.iconKey} fallback={item.defaultIcon} className="h-5 w-5 text-primary" />
                       </div>
                       <span className="text-[10px] font-semibold text-gray-700 text-center relative px-1 leading-tight">
@@ -169,7 +166,7 @@ function DashboardPageComponent() {
           {items.map(({ iconKey, defaultIcon, label, href }, index) => (
             <Link href={href || '#'} key={index} className="shrink-0">
                 <div className="flex flex-col items-center space-y-2 p-1 rounded-lg hover:bg-red-50 transition-colors">
-                    <div className="flex items-center justify-center h-12 w-12 rounded-lg bg-primary/5">
+                    <div className="flex items-center justify-center h-12 w-12 rounded-2xl bg-rose-50">
                         <DynamicIcon iconKey={iconKey} fallback={defaultIcon} className="h-6 w-6 text-primary" />
                     </div>
                     <span className="text-xs font-medium text-gray-700 text-center leading-tight px-1">{label}</span>
@@ -183,7 +180,7 @@ function DashboardPageComponent() {
        <div className="grid grid-cols-4 gap-4 text-center">
           {items.map(({ iconKey, defaultIcon, label, highlighted }, index) => (
             <div key={index} className="flex flex-col items-center gap-1">
-                <div className={cn("rounded-lg p-3", highlighted ? 'bg-primary/10' : 'bg-primary/10')}>
+                <div className={cn("rounded-2xl p-3", highlighted ? 'bg-primary/10' : 'bg-primary/10')}>
                     <DynamicIcon 
                         iconKey={iconKey} 
                         fallback={defaultIcon} 
@@ -210,8 +207,8 @@ function DashboardPageComponent() {
 );
 
   return (
-    <div className="flex flex-col min-h-screen bg-gray-50">
-      <header className="flex items-center justify-between p-3 h-16 bg-gray-50 shadow-sm sticky top-0 z-30">
+    <div className="pnb-dashboard flex flex-col min-h-screen bg-gray-50">
+      <header className="pnb-dashboard-header flex items-center justify-between p-3 h-16 bg-gray-50 shadow-sm sticky top-0 z-30">
         <Sheet>
           <SheetTrigger asChild>
             <Button variant="ghost" size="icon">
@@ -237,7 +234,29 @@ function DashboardPageComponent() {
         </div>
       </header>
       
-      <main className="flex-1 overflow-y-auto pb-20">
+      <main className="pnb-dashboard-main flex-1 overflow-y-auto pb-24">
+
+          <section className="pnb-dashboard-greeting px-4 pb-3 pt-4">
+            <div className="flex items-center justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-xs font-semibold tracking-wide">Good {new Date().getHours() < 12 ? "Morning" : new Date().getHours() < 17 ? "Afternoon" : "Evening"},</p>
+                <h1 className="truncate">{state.user?.name || 'Customer'}</h1>
+                <p className="mt-1 text-[11px]">Welcome to PNB ONE</p>
+              </div>
+              <Link href="/my-profile" aria-label="Open profile" className="pnb-dashboard-avatar">
+                {(state.user?.name || 'Customer').split(/\s+/).filter(Boolean).slice(0, 2).map(part => part[0]?.toUpperCase()).join("") || "PN"}
+              </Link>
+            </div>
+          </section>
+          <section className="pnb-account-heading">
+            <h2>ACCOUNTS</h2>
+            <Link href="/all-accounts">All Accounts <ChevronRight className="inline h-3 w-3" aria-hidden="true" /></Link>
+          </section>
+          <div className="px-4 pb-1 bg-white">
+            <div className="pnb-account-tabs">
+              <span>Primary</span><span>Deposits</span><span>Prepaid Cards</span>
+            </div>
+          </div>
           {/* Account Cards Section */}
           <div className="bg-gray-100 py-3">
             <Carousel
@@ -315,7 +334,28 @@ function DashboardPageComponent() {
             </div>
           </div>
           
-          <div className="p-2 space-y-4 bg-white">
+          <div className="p-3 space-y-4 bg-white">
+
+            <section className="pnb-instant-actions">
+              <h2 className="pnb-section-title mb-3 px-1">Instant Actions</h2>
+              <div className="grid grid-cols-4 gap-2">
+                {[
+                  { label: "Send Money", href: "/fund-transfer", icon: Send, tone: "bg-amber-50 text-amber-700" },
+                  { label: "Account Statement", href: "/account-statement", icon: BookOpen, tone: "bg-emerald-50 text-emerald-700" },
+                  { label: "Beneficiaries", href: "/fund-transfer/beneficiary/list", icon: Users, tone: "bg-rose-50 text-rose-700" },
+                  { label: "My Profile", href: "/my-profile", icon: Contact, tone: "bg-sky-50 text-sky-700" }
+                ].map((action) => {
+                  const Icon = action.icon;
+                  return (
+                    <Link href={action.href} key={action.label} className="min-w-0 px-0.5">
+                      <span className={cn("pnb-instant-action-icon", action.tone)}><Icon className="h-6 w-6" /></span>
+                      <span className="pnb-instant-action-label">{action.label}</span>
+                    </Link>
+                  );
+                })}
+              </div>
+            </section>
+
             {/* Popular Section */}
             <section>
               <h2 className="font-headline font-bold text-sm text-gray-800 mb-2 px-1">Popular</h2>
@@ -323,7 +363,7 @@ function DashboardPageComponent() {
             </section>
     
             {/* Pay & Transfer Section */}
-            <Card className="shadow-sm">
+            <Card className="pnb-service-card shadow-sm">
                 <CardContent className="p-3 space-y-3">
                     <h2 className="font-headline font-bold text-sm text-gray-800 px-1">Pay &amp; Transfer</h2>
                     {renderPayTransferIconRow(payTransferItems)}
@@ -331,7 +371,7 @@ function DashboardPageComponent() {
             </Card>
     
             {/* Digital Loans Section */}
-             <Card className="shadow-sm">
+             <Card className="pnb-service-card shadow-sm">
                 <CardContent className="p-3 space-y-3">
                     <h2 className="font-headline font-bold text-sm text-gray-800">Digital Loans</h2>
                     {renderLoanIconRow(digitalLoans)}
@@ -339,7 +379,7 @@ function DashboardPageComponent() {
             </Card>
 
             {/* Invest / Apply Section */}
-            <Card className="shadow-sm">
+            <Card className="pnb-service-card shadow-sm">
                 <CardContent className="p-3 space-y-3">
                     <h2 className="font-headline font-bold text-sm text-gray-800">Invest / Apply</h2>
                     {renderInvestIconRow(investApplyItems)}

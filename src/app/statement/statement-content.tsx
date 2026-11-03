@@ -129,8 +129,8 @@ export function StatementContent() {
     if (!from || !to) return <div className="p-4 text-center">Invalid date range provided.</div>
 
     return (
-        <div className="flex flex-col h-screen bg-white">
-            <header className="p-3 bg-primary text-primary-foreground flex items-center justify-between sticky top-0 z-10">
+        <div className="pnb-page flex flex-col min-h-screen bg-white">
+            <header className="pnb-page-header p-3 bg-primary text-primary-foreground flex items-center justify-between sticky top-0 z-10">
                 <Button variant="ghost" size="icon" onClick={() => router.back()} className="text-accent hover:bg-white/10">
                     <ArrowLeft className="h-6 w-6"/>
                 </Button>

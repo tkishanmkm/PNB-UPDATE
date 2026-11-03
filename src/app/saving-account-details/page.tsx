@@ -103,8 +103,8 @@ export default function SavingAccountDetailsPage() {
         .slice(0, 10);
 
     return (
-        <div className="flex flex-col h-screen bg-gray-50">
-            <header className="bg-primary text-primary-foreground p-4 flex items-center justify-between shadow-md sticky top-0 z-20">
+        <div className="pnb-page flex flex-col min-h-screen bg-gray-50">
+            <header className="pnb-page-header bg-primary text-primary-foreground p-4 flex items-center justify-between shadow-md sticky top-0 z-20">
                 <button onClick={() => router.back()}>
                     <ArrowLeft className="h-6 w-6 text-accent" />
                 </button>

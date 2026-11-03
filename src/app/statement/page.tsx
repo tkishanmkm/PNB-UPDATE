@@ -12,7 +12,7 @@ export default function StatementPage() {
 }
 
 const StatementSkeleton = () => (
-    <div className="p-4 space-y-4">
+    <div className="pnb-page min-h-screen bg-gray-50 p-4 space-y-4">
         <div className="flex justify-between items-center">
             <Skeleton className="h-8 w-32" />
             <div className="flex gap-2">

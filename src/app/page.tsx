@@ -233,7 +233,7 @@ export default function LoginPage() {
       transitionSuperLogin('normal');
     };
     return (
-      <div className="flex min-h-screen flex-col bg-gray-50">
+      <div className="pnb-page flex min-h-screen flex-col bg-gray-50">
         <header className="flex h-16 items-center justify-between border-b bg-white px-4">
           <span className="text-xs font-semibold text-primary">App Version: 5.43</span>
           {headerLogo && <Image src={headerLogo} alt="App Logo" width={140} height={44} className="h-10 w-auto object-contain" />}
@@ -287,7 +287,7 @@ export default function LoginPage() {
     );
   }
   return (
-    <div className="flex min-h-[100dvh] flex-col bg-gray-50 pb-[env(safe-area-inset-bottom)]">
+    <div className="pnb-page pnb-login flex min-h-[100dvh] flex-col bg-gray-50 pb-[env(safe-area-inset-bottom)]">
         <header className="flex items-center justify-between p-3 bg-gray-50 h-16">
             <span className="text-xs text-primary font-semibold">App Version: 5.43</span>
             {settings?.appLogo && !settings.appLogo.includes("placehold.co") ? (<Image src={settings.appLogo} alt="App Logo" width={120} height={40} className="h-10 w-auto object-contain" data-ai-hint="app logo" />) : (<Image src="/pnb-splash/pnb-logo.png" alt="PNB" width={120} height={54} className="h-10 w-auto object-contain" />)}

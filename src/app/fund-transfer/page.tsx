@@ -4,10 +4,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Home, Landmark, Users, Repeat, ChevronRight } from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
 import { RupeeIcon } from "@/components/rupee-icon";
-import { useAppContext } from "@/hooks/use-app-store";
-import { cn } from "@/lib/utils";
 
 const TransferFundsIcon = () => (
     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -73,51 +70,75 @@ export default function FundTransferPage() {
         router.push(href);
     };
 
+    const primaryOptions = transferOptions.filter((item) =>
+        ["beneficiary-transfer", "quick-transfer", "self-transfer", "manage-beneficiary"].includes(item.id)
+    );
+    const internationalOption = transferOptions.find((item) => item.id === "indo-nepal");
+
+    const renderTransferTile = (item: typeof transferOptions[number]) => (
+        <button
+            key={item.id}
+            type="button"
+            onClick={() => handleOptionClick(item.href)}
+            className="group flex min-h-[122px] min-w-0 flex-col items-center justify-center gap-2 rounded-2xl border border-rose-100 bg-white px-2 py-4 text-center shadow-sm transition-colors hover:bg-rose-50 active:bg-rose-100"
+        >
+            <span className="grid h-12 w-12 place-items-center rounded-2xl bg-rose-50 text-primary shadow-sm transition-transform group-hover:-translate-y-0.5">
+                <item.icon className="h-6 w-6" strokeWidth={1.8} />
+            </span>
+            <span className="line-clamp-2 text-[11px] font-bold leading-4 text-gray-800">{item.title}</span>
+            {"amount" in item && (
+                <span className="text-[10px] leading-4 text-gray-500">
+                    {item.description}<RupeeIcon className="relative -top-px inline h-2.5 w-2.5" />{item.amount}{item.descriptionSuffix}
+                </span>
+            )}
+        </button>
+    );
+
     return (
-        <div className="flex flex-col h-screen bg-gray-50">
-            <header className="bg-primary text-primary-foreground p-4 flex items-center justify-between shadow-md sticky top-0 z-20">
-                <button onClick={() => router.back()}>
-                    <ArrowLeft className="h-6 w-6 text-accent" />
+        <div className="pnb-page flex min-h-screen flex-col bg-gray-50">
+            <header className="pnb-page-header sticky top-0 z-20 flex items-center justify-between bg-primary p-4 text-primary-foreground shadow-md">
+                <button onClick={() => router.back()} aria-label="Go back">
+                    <ArrowLeft className="h-6 w-6 text-white" />
                 </button>
-                <h1 className="text-xl font-semibold">Fund Transfer</h1>
-                <Link href="/dashboard">
-                     <Home className="h-6 w-6 text-accent" />
+                <h1 className="text-xl font-semibold">Send Money</h1>
+                <Link href="/dashboard" aria-label="Home">
+                    <Home className="h-6 w-6 text-white" />
                 </Link>
             </header>
 
-            <main className="flex-1 p-2 space-y-2 overflow-y-auto">
-                <Card className="shadow-none">
-                    <CardContent className="p-0 divide-y">
-                        {transferOptions.map((item, index) => {
-                            return (
-                             <div 
-                                key={index} 
-                                onClick={() => handleOptionClick(item.href)} 
-                                className="block hover:bg-gray-100 transition-colors cursor-pointer"
-                             >
-                                <div className="flex items-center p-4">
-                                    <div className="mr-4 text-primary">
-                                        <item.icon className="h-6 w-6" />
-                                    </div>
-                                    <div className="flex-1">
-                                        <p className="font-semibold text-sm text-gray-800">{item.title}</p>
-                                        {'amount' in item ? (
-                                            <p className="text-xs text-gray-500">
-                                                {item.description}
-                                                <RupeeIcon className="h-2 w-2 relative -top-px" />
-                                                {item.amount}
-                                                {item.descriptionSuffix}
-                                            </p>
-                                        ) : (
-                                            <p className="text-xs text-gray-500">{item.description}</p>
-                                        )}
-                                    </div>
-                                    <ChevronRight className="h-5 w-5 text-gray-400" />
-                                </div>
-                             </div>
-                        )})}
-                    </CardContent>
-                </Card>
+            <main className="flex-1 space-y-4 p-3 pb-8">
+                <section className="rounded-2xl border border-rose-100 bg-white p-3 shadow-sm">
+                    <div className="mb-3 flex items-center justify-between px-1">
+                        <h2 className="text-sm font-bold text-gray-800">Transfer Money</h2>
+                        <span className="text-[10px] font-semibold uppercase tracking-wider text-primary">Choose a service</span>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                        {primaryOptions.map(renderTransferTile)}
+                    </div>
+                </section>
+
+                {internationalOption && (
+                    <section className="space-y-2">
+                        <div className="px-1">
+                            <h2 className="text-sm font-bold text-gray-800">Make International Payment</h2>
+                            <p className="mt-0.5 text-[11px] text-gray-500">Send money through supported remittance services</p>
+                        </div>
+                        <button
+                            type="button"
+                            onClick={() => handleOptionClick(internationalOption.href)}
+                            className="flex w-full items-center gap-3 rounded-2xl border border-rose-100 bg-white p-4 text-left shadow-sm transition-colors hover:bg-rose-50"
+                        >
+                            <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-amber-50 text-amber-700">
+                                <internationalOption.icon className="h-6 w-6" strokeWidth={1.8} />
+                            </span>
+                            <span className="min-w-0 flex-1">
+                                <span className="block text-sm font-bold text-gray-800">{internationalOption.title}</span>
+                                <span className="mt-1 block text-xs leading-5 text-gray-500">{internationalOption.description}</span>
+                            </span>
+                            <ChevronRight className="h-5 w-5 shrink-0 text-gray-400" />
+                        </button>
+                    </section>
+                )}
             </main>
         </div>
     );

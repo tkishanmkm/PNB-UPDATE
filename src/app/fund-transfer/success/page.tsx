@@ -269,7 +269,7 @@ function TransferSuccess() {
     const rrnNumber = displayRrn.split('/')[1] || displayRrn;
 
     return (
-        <div className="flex flex-col h-screen bg-gray-50">
+        <div className="pnb-page flex flex-col min-h-screen bg-gray-50">
              <header className="flex justify-center py-2">
                 {settings.appLogo && (
                     <Image src={settings.appLogo} alt="App Logo" width={100} height={40} className="h-8 w-auto object-contain" data-ai-hint="app logo"/>

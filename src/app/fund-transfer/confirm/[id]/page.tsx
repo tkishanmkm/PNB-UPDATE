@@ -91,7 +91,7 @@ function ConfirmTransferPage() {
       case 'tpin':
         const tpinDigits = tpin.padEnd(4, ' ').split('');
         return (
-             <div className="flex flex-col h-screen bg-white">
+             <div className="pnb-page flex flex-col min-h-screen bg-white">
                 <header className="bg-primary text-primary-foreground p-4 flex items-center">
                     <button onClick={() => setStep('summary')}>
                         <ArrowLeft className="h-6 w-6 text-accent" />
@@ -134,7 +134,7 @@ function ConfirmTransferPage() {
       default:
         return (
           <>
-            <header className="bg-primary text-primary-foreground p-4 flex items-center justify-between shadow-md sticky top-0 z-20">
+            <header className="pnb-page-header bg-primary text-primary-foreground p-4 flex items-center justify-between shadow-md sticky top-0 z-20">
                 <button onClick={() => router.back()}>
                     <ArrowLeft className="h-6 w-6" />
                 </button>
@@ -196,7 +196,7 @@ function ConfirmTransferPage() {
   }
 
   return (
-    <div className="flex flex-col h-screen bg-gray-50">
+    <div className="pnb-page flex flex-col min-h-screen bg-gray-50">
         {renderStep()}
     </div>
   );

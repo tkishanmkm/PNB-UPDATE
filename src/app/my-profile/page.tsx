@@ -4,8 +4,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Card } from '@/components/ui/card';
-import { ArrowLeft, Home, ChevronRight, User, KeyRound, ShieldCheck, Fingerprint, Languages, Building, XCircle } from 'lucide-react';
+import { ArrowLeft, Home, User, KeyRound, ShieldCheck, Fingerprint, Languages, Building, XCircle } from 'lucide-react';
 
 const options = [
     {
@@ -53,40 +52,53 @@ const options = [
 export default function MyProfilePage() {
     const router = useRouter();
 
-    const renderOption = (option: typeof options[0]) => (
-        <div className="flex items-center p-4">
-            <div className="mr-4 text-primary">
-                <option.icon className="h-6 w-6" />
+
+    const renderOption = (option: typeof options[0], index: number) => (
+        <Link
+            href={option.href}
+            key={option.title + "-" + index}
+            className="group flex min-w-0 flex-col items-center gap-2 rounded-2xl px-1 py-3 text-center transition-colors hover:bg-rose-50 active:bg-rose-100"
+        >
+            <span className="grid h-12 w-12 place-items-center rounded-2xl bg-rose-50 text-primary shadow-sm transition-transform group-hover:-translate-y-0.5">
+                <option.icon className="h-6 w-6" strokeWidth={1.8} />
+            </span>
+            <span className="line-clamp-2 min-h-8 text-[10px] font-semibold leading-4 text-gray-700">
+                {option.title}
+            </span>
+        </Link>
+    );
+
+    const renderGroup = (title: string, group: typeof options) => (
+        <section className="overflow-hidden rounded-2xl border border-rose-100 bg-white shadow-sm">
+            <div className="flex items-center justify-between border-b border-rose-50 px-4 py-3">
+                <h2 className="text-sm font-bold text-gray-800">{title}</h2>
+                <span className="h-1.5 w-7 rounded-full bg-rose-200" />
             </div>
-            <div className="flex-1">
-                <p className="font-semibold text-sm text-gray-800">{option.title}</p>
+            <div className="grid grid-cols-4 gap-1 p-2">
+                {group.map((option) => renderOption(option, options.indexOf(option)))}
             </div>
-            <ChevronRight className="h-5 w-5 text-gray-400" />
-        </div>
+        </section>
     );
 
     return (
-        <div className="flex flex-col h-screen bg-gray-50">
-            <header className="bg-primary text-primary-foreground p-4 flex items-center justify-between shadow-md sticky top-0 z-20">
-                <button onClick={() => router.back()}>
-                    <ArrowLeft className="h-6 w-6 text-accent" />
+        <div className="pnb-page flex min-h-screen flex-col bg-gray-50">
+            <header className="pnb-page-header bg-primary text-primary-foreground sticky top-0 z-20 flex items-center justify-between p-4 shadow-md">
+                <button onClick={() => router.back()} aria-label="Go back">
+                    <ArrowLeft className="h-6 w-6 text-white" />
                 </button>
-                <h1 className="text-xl font-semibold">My Profile</h1>
-                <Link href="/dashboard">
-                     <Home className="h-6 w-6 text-accent" />
+                <h1 className="text-xl font-semibold">Profile Settings</h1>
+                <Link href="/dashboard" aria-label="Home">
+                    <Home className="h-6 w-6 text-white" />
                 </Link>
             </header>
 
-            <main className="flex-1 p-2 space-y-2 overflow-y-auto">
-                <Card className="shadow-sm">
-                    <div className="p-0 divide-y">
-                        {options.map((option, index) => (
-                            <Link href={option.href} key={index} className="block hover:bg-gray-100 transition-colors">
-                                {renderOption(option)}
-                            </Link>
-                        ))}
-                    </div>
-                </Card>
+            <main className="flex-1 space-y-4 p-3 pb-8">
+                <section className="rounded-2xl bg-gradient-to-r from-rose-50 to-white px-4 py-3">
+                    <p className="text-xs font-semibold uppercase tracking-wider text-primary">Manage your profile</p>
+                    <p className="mt-1 text-xs text-gray-500">Personal details, access and account preferences</p>
+                </section>
+                {renderGroup("Profile Settings", options.slice(0, 4))}
+                {renderGroup("Account Related Settings", options.slice(4))}
             </main>
         </div>
     );

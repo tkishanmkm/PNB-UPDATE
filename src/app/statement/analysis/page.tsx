@@ -2,12 +2,13 @@
 "use client";
 
 import React, { Suspense, useEffect, useState } from 'react';
-import { useSearchParams } from 'next/navigation';
+import Link from 'next/link';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useAppContext } from '@/hooks/use-app-store';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { AlertTriangle, Lightbulb, LineChart } from 'lucide-react';
+import { AlertTriangle, ArrowLeft, Home, Lightbulb, LineChart } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { analyzeStatement } from '@/ai/flows/ai-statement-analysis';
 import type { AnalyzeStatementOutput } from '@/ai/flows/ai-statement-analysis';
@@ -132,8 +133,15 @@ function AnalysisPageHeader() {
 }
 
 export default function StatementAnalysisPage() {
+    const router = useRouter();
     return (
-        <div className="p-4">
+        <div className="pnb-page min-h-screen bg-gray-50">
+            <header className="pnb-page-header sticky top-0 z-20 flex items-center justify-between bg-primary p-4 text-primary-foreground shadow-md">
+                <button onClick={() => router.back()} aria-label="Go back"><ArrowLeft className="h-6 w-6 text-white" /></button>
+                <h1 className="text-base font-semibold">Statement Analysis</h1>
+                <Link href="/dashboard" aria-label="Home"><Home className="h-6 w-6 text-white" /></Link>
+            </header>
+            <main className="p-4">
             <Suspense fallback={
                 <div className="mb-6">
                     <Skeleton className="h-8 w-1/2 mb-2" />
@@ -143,6 +151,7 @@ export default function StatementAnalysisPage() {
                 <AnalysisPageHeader />
             </Suspense>
             <AnalysisDisplay />
+            </main>
         </div>
     )
 }
