@@ -552,3 +552,280 @@ body {
   scrollbar-width: thin;
   scrollbar-color: #e7cbd5 transparent;
 }
+
+
+/* Reference-matched catalogue screens based on the supplied PNB ONE 4.43 captures. */
+.pnb-reference-screen {
+  min-height: 100dvh;
+  overflow-x: clip;
+  background: #f6f4f5;
+  color: #282126;
+}
+
+.pnb-reference-screen-head,
+.pnb-reference-title-head {
+  padding: calc(env(safe-area-inset-top, 0px) + 12px) 18px 56px;
+  color: white;
+  background: linear-gradient(112deg, #960b2c 0%, #bd173d 52%, #e15d70 100%);
+}
+
+.pnb-reference-screen-head h1,
+.pnb-reference-title-head h1 {
+  margin-top: 24px;
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: -.03em;
+  line-height: 1.15;
+}
+
+.pnb-reference-head-button {
+  display: grid;
+  width: 42px;
+  height: 42px;
+  place-items: center;
+  border-radius: 13px;
+  color: white;
+}
+
+.pnb-reference-head-button:active {
+  background: rgba(255,255,255,.16);
+}
+
+.pnb-service-search {
+  display: flex;
+  height: 54px;
+  align-items: center;
+  gap: 12px;
+  margin-top: 24px;
+  padding: 0 17px;
+  border: 1px solid #f0e5ea;
+  border-radius: 15px;
+  background: #fff;
+  box-shadow: 0 4px 14px rgba(50, 15, 30, .08);
+}
+
+.pnb-service-search input {
+  width: 100%;
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: #332a30;
+  font-size: 15px;
+}
+
+.pnb-reference-screen-body {
+  position: relative;
+  margin-top: -30px;
+  min-height: calc(100dvh - 210px);
+  padding: 25px 16px 32px;
+  border-radius: 28px 28px 0 0;
+  background: #fff;
+}
+
+.pnb-service-group {
+  overflow: hidden;
+  border: 1px solid #eee9ec;
+  border-radius: 22px;
+  background: #f8f7f8;
+  box-shadow: 0 4px 14px rgba(55, 28, 39, .035);
+}
+
+.pnb-service-group-heading {
+  display: flex;
+  width: 100%;
+  min-height: 82px;
+  align-items: center;
+  gap: 14px;
+  padding: 13px 14px;
+  color: #2b2529;
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.pnb-service-group-icon {
+  display: grid;
+  width: 70px;
+  height: 70px;
+  flex: 0 0 70px;
+  place-items: center;
+  border: 1px solid #f6cdd8;
+  border-radius: 17px;
+  background: #ffe9ee;
+  color: #ad163e;
+}
+
+.pnb-service-tile {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  align-items: center;
+  gap: 7px;
+  text-align: center;
+}
+
+.pnb-service-tile-icon {
+  display: grid;
+  width: 100%;
+  max-width: 82px;
+  aspect-ratio: 1 / .82;
+  place-items: center;
+  border: 1px solid #eee8eb;
+  border-radius: 20px;
+  background: #fff;
+  box-shadow: 0 2px 5px rgba(40, 20, 30, .08);
+}
+
+.pnb-service-tile-label {
+  display: -webkit-box;
+  min-height: 30px;
+  overflow: hidden;
+  color: #342b30;
+  font-size: 10px;
+  font-weight: 650;
+  line-height: 1.35;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.pnb-service-tile-disabled {
+  opacity: .82;
+}
+
+.pnb-reference-list-card {
+  display: flex;
+  min-height: 94px;
+  align-items: center;
+  gap: 14px;
+  padding: 11px;
+  border: 1px solid #eeeaec;
+  border-radius: 19px;
+  background: #f8f7f8;
+  box-shadow: 0 2px 7px rgba(45, 22, 33, .035);
+}
+
+.pnb-reference-list-icon {
+  display: grid;
+  width: 76px;
+  height: 76px;
+  flex: 0 0 76px;
+  place-items: center;
+  border: 1px solid currentColor;
+  border-radius: 17px;
+  background: #fff;
+  border-color: rgba(180, 40, 80, .12);
+}
+
+.pnb-reference-list-arrow {
+  display: grid;
+  width: 38px;
+  height: 38px;
+  flex: 0 0 38px;
+  place-items: center;
+  border-radius: 50%;
+  background: #fff;
+  color: #bd234b;
+}
+
+@media (min-width: 768px) {
+  .pnb-reference-screen {
+    max-width: 560px;
+    margin-inline: auto;
+    box-shadow: 0 0 45px rgba(50, 20, 35, .05);
+  }
+}
+
+
+.pnb-dashboard-header {
+  min-height: 76px;
+  padding-top: calc(env(safe-area-inset-top, 0px) + 8px) !important;
+  background: rgba(255,255,255,.97) !important;
+  border-bottom: 1px solid #f4e9ed;
+}
+
+.pnb-dashboard-header .pnb-dashboard-avatar {
+  width: 49px;
+  height: 49px;
+  flex-basis: 49px;
+  font-size: 15px;
+}
+
+.pnb-primary-account-card {
+  min-height: 184px;
+  overflow: hidden;
+  border: 0 !important;
+  border-radius: 21px !important;
+  background:
+    radial-gradient(circle at 92% 12%, rgba(255,255,255,.11) 0 18%, transparent 18.5%),
+    radial-gradient(circle at 4% 100%, rgba(255,255,255,.08) 0 17%, transparent 17.5%),
+    linear-gradient(112deg, #a00c35 0%, #c51b45 56%, #9e153c 100%) !important;
+  box-shadow: 0 10px 23px rgba(147, 13, 55, .2) !important;
+}
+
+.pnb-account-action {
+  display: flex;
+  min-height: 34px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(255,255,255,.2);
+  border-radius: 9px;
+  background: rgba(255,255,255,.10);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.pnb-dashboard-action-tile {
+  display: flex;
+  min-height: 74px;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid #eee6e9;
+  border-radius: 17px;
+  color: #51434b;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.pnb-dashboard-action-tile > span:first-child {
+  display: grid;
+  width: 42px;
+  height: 42px;
+  flex: 0 0 42px;
+  place-items: center;
+  border-radius: 12px;
+}
+
+.pnb-dashboard-action-amber { background: #fffaf0; }
+.pnb-dashboard-action-amber > span:first-child { background: #fff2cf; color: #a77a1a; }
+.pnb-dashboard-action-green { background: #f2fbf0; }
+.pnb-dashboard-action-green > span:first-child { background: #e2f4e1; color: #268050; }
+.pnb-dashboard-action-rose { background: #fff3f5; }
+.pnb-dashboard-action-rose > span:first-child { background: #ffe2e8; color: #ae1742; }
+.pnb-dashboard-action-blue { background: #f0faff; }
+.pnb-dashboard-action-blue > span:first-child { background: #dff4fc; color: #267b9b; }
+
+.pnb-dashboard .pnb-account-heading {
+  padding-top: 14px;
+}
+
+
+.pnb-send-money-tile {
+  border-color: #f3e8ec;
+  background: #fff;
+  box-shadow: 0 3px 10px rgba(57, 26, 40, .04);
+}
+
+.pnb-send-money-tile .line-clamp-2 {
+  min-height: 30px;
+  color: #a00f38;
+  font-size: 11px;
+  font-weight: 650;
+  line-height: 1.3;
+}
+
+.pnb-reference-screen-body .pnb-reference-list-card {
+  transition: transform .16s ease, box-shadow .16s ease;
+}

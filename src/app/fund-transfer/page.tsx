@@ -1,9 +1,10 @@
-
+﻿
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Home, Landmark, Users, Repeat, ChevronRight } from "lucide-react";
+import { ArrowLeft, Home, Landmark, Repeat, ChevronRight } from "lucide-react";
 import { RupeeIcon } from "@/components/rupee-icon";
 
 const TransferFundsIcon = () => (
@@ -26,14 +27,14 @@ const QuickTransferIcon = () => (
 const transferOptions = [
     {
         icon: TransferFundsIcon,
-        title: "Transfer Funds to Beneficiary",
-        description: "Send money to registered beneficiaries",
-        href: "/fund-transfer/to-beneficiary/select",
+        title: "Payee (Added)",
+        description: "Send money to a saved beneficiary",
+        href: "/fund-transfer/beneficiary",
         id: "beneficiary-transfer"
     },
     {
         icon: QuickTransferIcon,
-        title: "Quick Fund Transfer",
+        title: "One Time (Bank)",
         description: "Send upto ",
         amount: "10,000",
         descriptionSuffix: " without adding beneficiary",
@@ -42,8 +43,8 @@ const transferOptions = [
     },
     {
         icon: Landmark,
-        title: "Transfer Funds to Self",
-        description: "Send money to your accounts within PNB",
+        title: "Self (Own Account)",
+        description: "Transfer between your own PNB accounts",
         href: "#",
         id: "self-transfer"
     },
@@ -54,13 +55,6 @@ const transferOptions = [
         href: "#",
         id: "indo-nepal"
     },
-    {
-        icon: Users,
-        title: "Manage Beneficiaries",
-        description: "View, add, edit, remove beneficiaries",
-        href: "/fund-transfer/beneficiary/list",
-        id: "manage-beneficiary"
-    }
 ];
 
 export default function FundTransferPage() {
@@ -71,7 +65,7 @@ export default function FundTransferPage() {
     };
 
     const primaryOptions = transferOptions.filter((item) =>
-        ["beneficiary-transfer", "quick-transfer", "self-transfer", "manage-beneficiary"].includes(item.id)
+        ["self-transfer", "beneficiary-transfer", "quick-transfer"].includes(item.id)
     );
     const internationalOption = transferOptions.find((item) => item.id === "indo-nepal");
 
@@ -79,11 +73,12 @@ export default function FundTransferPage() {
         <button
             key={item.id}
             type="button"
+            disabled={item.href === "#"}
             onClick={() => handleOptionClick(item.href)}
-            className="group flex min-h-[122px] min-w-0 flex-col items-center justify-center gap-2 rounded-2xl border border-rose-100 bg-white px-2 py-4 text-center shadow-sm transition-colors hover:bg-rose-50 active:bg-rose-100"
+            className="pnb-send-money-tile group flex min-h-[132px] min-w-0 flex-col items-center justify-center gap-2 rounded-2xl border border-rose-100 bg-white px-1 py-4 text-center shadow-sm transition-colors hover:bg-rose-50 active:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-65"
         >
-            <span className="grid h-12 w-12 place-items-center rounded-2xl bg-rose-50 text-primary shadow-sm transition-transform group-hover:-translate-y-0.5">
-                <item.icon className="h-6 w-6" strokeWidth={1.8} />
+            <span className="grid h-[66px] w-[66px] place-items-center rounded-full bg-rose-50 text-primary shadow-sm transition-transform group-hover:-translate-y-0.5">
+                <item.icon className="h-8 w-8" strokeWidth={1.6} />
             </span>
             <span className="line-clamp-2 text-[11px] font-bold leading-4 text-gray-800">{item.title}</span>
             {"amount" in item && (
@@ -109,11 +104,15 @@ export default function FundTransferPage() {
             <main className="flex-1 space-y-4 p-3 pb-8">
                 <section className="rounded-2xl border border-rose-100 bg-white p-3 shadow-sm">
                     <div className="mb-3 flex items-center justify-between px-1">
-                        <h2 className="text-sm font-bold text-gray-800">Transfer Money</h2>
-                        <span className="text-[10px] font-semibold uppercase tracking-wider text-primary">Choose a service</span>
+                        <h2 className="text-sm font-bold text-gray-800">Send Money to</h2>
+                        <Link href="/fund-transfer/beneficiary/list" className="text-xs font-semibold text-primary underline">Manage Payee</Link>
                     </div>
-                    <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                    <div className="grid grid-cols-4 gap-1 sm:gap-2">
                         {primaryOptions.map(renderTransferTile)}
+                        <div className="flex min-h-[122px] min-w-0 flex-col items-center justify-center gap-2 px-1 py-4 text-center opacity-80" aria-disabled="true">
+                            <span className="grid h-12 w-12 place-items-center rounded-full bg-rose-50 text-primary"><Image src="/pnb-one-ui/payment-logos/ic_upi_logo.svg" alt="" width={34} height={34} unoptimized/></span>
+                            <span className="line-clamp-2 text-[11px] font-bold leading-4 text-gray-800">UPI (Payments)</span>
+                        </div>
                     </div>
                 </section>
 
@@ -125,8 +124,9 @@ export default function FundTransferPage() {
                         </div>
                         <button
                             type="button"
+                            disabled={internationalOption.href === "#"}
                             onClick={() => handleOptionClick(internationalOption.href)}
-                            className="flex w-full items-center gap-3 rounded-2xl border border-rose-100 bg-white p-4 text-left shadow-sm transition-colors hover:bg-rose-50"
+                            className="flex w-full items-center gap-3 rounded-2xl border border-rose-100 bg-white p-4 text-left shadow-sm transition-colors hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-65"
                         >
                             <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-amber-50 text-amber-700">
                                 <internationalOption.icon className="h-6 w-6" strokeWidth={1.8} />

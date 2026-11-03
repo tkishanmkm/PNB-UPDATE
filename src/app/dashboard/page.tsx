@@ -7,12 +7,11 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Carousel, CarouselContent, CarouselItem } from "@/components/ui/carousel";
-import { ChevronRight, Eye, EyeOff, BookOpen, UserPlus, CreditCard, ShoppingCart, Home, Briefcase, Tractor, Link2, Send, CheckCircle2, Contact, Users, CreditCard as CreditCardIcon, HandCoins, Menu, Search, LogOut, QrCode, Percent, Leaf, PercentSquare, Warehouse, Car, GraduationCap, RefreshCw, TrendingUp, Landmark, FileCheck, Umbrella } from "lucide-react";
+import { Bell, ChevronRight, Eye, EyeOff, BookOpen, UserPlus, CreditCard, ShoppingCart, Home, Briefcase, Tractor, Link2, Send, CheckCircle2, Contact, Users, CreditCard as CreditCardIcon, HandCoins, Search, LogOut, QrCode, Percent, Leaf, PercentSquare, Warehouse, Car, GraduationCap, RefreshCw, TrendingUp, Landmark, FileCheck, Umbrella } from "lucide-react";
 import { useAppContext } from "@/hooks/use-app-store";
 import { cn, formatCurrency } from "@/lib/utils";
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import SideNav from '@/components/side-nav';
-import { PNBLogo } from '@/components/pnb-logo';
 import { RupeeIcon } from "@/components/rupee-icon";
 import DynamicIcon from "@/components/dynamic-icon";
 import type { IconAssets } from "@/lib/types";
@@ -118,7 +117,7 @@ const EmergencyIcon = () => (
 
 
 const bottomNavItems: DynamicIconItem[] = [
-  { iconKey: 'services', defaultIcon: ServicesIcon, href: '/dashboard', label: 'Services' },
+  { iconKey: 'services', defaultIcon: ServicesIcon, href: '/services', label: 'Services' },
   { iconKey: 'myRewards', defaultIcon: MyRewardsIcon, href: '#', label: 'My Rewards' },
   { iconKey: 'scan', defaultIcon: QrCode, href: '#', label: 'Scan', isCentral: true },
   { iconKey: 'offers', defaultIcon: Percent, href: '#', label: 'Offers' },
@@ -208,46 +207,32 @@ function DashboardPageComponent() {
 
   return (
     <div className="pnb-dashboard flex flex-col min-h-screen bg-gray-50">
-      <header className="pnb-dashboard-header flex items-center justify-between p-3 h-16 bg-gray-50 shadow-sm sticky top-0 z-30">
+      <header className="pnb-dashboard-header flex items-center justify-between gap-2 px-3 py-3 sticky top-0 z-30">
         <Sheet>
           <SheetTrigger asChild>
-            <Button variant="ghost" size="icon">
-              <Menu className="h-6 w-6 text-primary" />
-            </Button>
+            <button type="button" className="flex min-w-0 items-center gap-3 rounded-full text-left" aria-label="Open profile and navigation">
+              <span className="pnb-dashboard-avatar">
+                {(state.user?.name || "Customer").split(/\s+/).filter(Boolean).slice(0,2).map(part => part[0]?.toUpperCase()).join("") || "PN"}
+              </span>
+              <span className="min-w-0">
+                <span className="block text-[11px] leading-4 text-gray-500">Good {new Date().getHours() < 12 ? "Morning" : new Date().getHours() < 17 ? "Afternoon" : "Evening"},</span>
+                <span className="block max-w-[145px] truncate text-sm font-bold text-[#4a2835]">{state.user?.name || "Customer"}</span>
+              </span>
+            </button>
           </SheetTrigger>
           <SheetContent side="left" className="p-0 w-[280px]">
             <SideNav />
           </SheetContent>
         </Sheet>
-
-        <div className="absolute left-1/2 -translate-x-1/2">
-          <PNBLogo className="h-10 w-auto object-contain" />
-        </div>
-
-        <div className="flex items-center gap-2">
-          <Button variant="ghost" size="icon">
-            <Search className="h-6 w-6 text-primary" />
-          </Button>
-          <Button variant="ghost" size="icon" onClick={handleLogout}>
-            <LogOut className="h-6 w-6 text-primary" />
-          </Button>
+        <div className="flex shrink-0 items-center gap-1">
+          <Button variant="ghost" size="icon" aria-label="Search"><Search className="h-5 w-5 text-primary"/></Button>
+          <Button variant="ghost" size="icon" aria-label="Notifications"><Bell className="h-5 w-5 text-primary"/></Button>
+          <Button variant="ghost" size="icon" aria-label="Logout" onClick={handleLogout}><LogOut className="h-5 w-5 text-primary"/></Button>
         </div>
       </header>
       
       <main className="pnb-dashboard-main flex-1 overflow-y-auto pb-24">
 
-          <section className="pnb-dashboard-greeting px-4 pb-3 pt-4">
-            <div className="flex items-center justify-between gap-3">
-              <div className="min-w-0">
-                <p className="text-xs font-semibold tracking-wide">Good {new Date().getHours() < 12 ? "Morning" : new Date().getHours() < 17 ? "Afternoon" : "Evening"},</p>
-                <h1 className="truncate">{state.user?.name || 'Customer'}</h1>
-                <p className="mt-1 text-[11px]">Welcome to PNB ONE</p>
-              </div>
-              <Link href="/my-profile" aria-label="Open profile" className="pnb-dashboard-avatar">
-                {(state.user?.name || 'Customer').split(/\s+/).filter(Boolean).slice(0, 2).map(part => part[0]?.toUpperCase()).join("") || "PN"}
-              </Link>
-            </div>
-          </section>
           <section className="pnb-account-heading">
             <h2>ACCOUNTS</h2>
             <Link href="/all-accounts">All Accounts <ChevronRight className="inline h-3 w-3" aria-hidden="true" /></Link>
@@ -269,24 +254,31 @@ function DashboardPageComponent() {
             >
               <CarouselContent className="-ml-2">
                 <CarouselItem className="pl-4">
-                  <Link href="/saving-account-details">
-                    <Card className="bg-primary text-primary-foreground rounded-lg shadow-md">
-                      <CardContent className="p-3 flex flex-col justify-between h-24">
-                        <div>
-                          <p className="text-xs font-light">{account.type} Account</p>
-                          <p className="text-xs font-semibold">...{account.accountNumber.slice(-4)}</p>
+                  <Card className="pnb-primary-account-card text-white shadow-lg">
+                    <CardContent className="flex min-h-[184px] flex-col justify-between gap-4 p-4">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="truncate text-base font-bold">{state.user?.name || "Customer"}</p>
+                          <p className="mt-1 text-xs font-medium tracking-wide text-white/90">???? {account.accountNumber.slice(-4)}</p>
                         </div>
-                        <div className="flex justify-between items-center">
-                          <p className="text-base font-bold tracking-tighter flex items-center">
-                            {showBalance ? <><RupeeIcon className="w-3.5 h-3.5 mr-0.5" /> {formattedBalance}</> : "••••••••••"}
-                          </p>
-                          <Button variant="ghost" size="icon" className="h-6 w-6 text-white hover:bg-white/20" onClick={(e) => { e.preventDefault(); setShowBalance(!showBalance);}}>
-                            {showBalance ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                          </Button>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </Link>
+                        <span className="rounded-xl border border-white/70 px-3 py-1.5 text-xs font-bold">{account.type}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-[11px] font-semibold text-white/80">Available Balance</span>
+                        <span className="text-sm font-bold tracking-tight">
+                          {showBalance ? <span className="inline-flex items-center"><RupeeIcon className="mr-0.5 h-3.5 w-3.5"/>{formattedBalance}</span> : "????????"}
+                        </span>
+                        <Button variant="ghost" size="icon" aria-label={showBalance ? "Hide balance" : "Show balance"} className="h-7 w-7 text-white hover:bg-white/15" onClick={() => setShowBalance(!showBalance)}>
+                          {showBalance ? <EyeOff className="h-4 w-4"/> : <Eye className="h-4 w-4"/>}
+                        </Button>
+                      </div>
+                      <div className="grid grid-cols-3 gap-2 border-t border-white/20 pt-3">
+                        <Link href="/saving-account-details" className="pnb-account-action">A/c Details</Link>
+                        <Link href="/account-statement" className="pnb-account-action">Get Statement</Link>
+                        <Link href="/services" className="pnb-account-action">A/c Services</Link>
+                      </div>
+                    </CardContent>
+                  </Card>
                 </CarouselItem>
                 <CarouselItem className="pl-4">
                   <Card className="bg-primary text-primary-foreground rounded-lg shadow-md">
@@ -337,19 +329,22 @@ function DashboardPageComponent() {
           <div className="p-3 space-y-4 bg-white">
 
             <section className="pnb-instant-actions">
-              <h2 className="pnb-section-title mb-3 px-1">Instant Actions</h2>
-              <div className="grid grid-cols-4 gap-2">
+              <div className="mb-3 flex items-center justify-between gap-2 px-1">
+                <h2 className="pnb-section-title">INSTANT ACTIONS!</h2>
+                <Link href="/account-statement" className="text-[11px] font-semibold text-primary">My Transactions <ChevronRight className="inline h-3 w-3"/></Link>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
                 {[
-                  { label: "Send Money", href: "/fund-transfer", icon: Send, tone: "bg-amber-50 text-amber-700" },
-                  { label: "Account Statement", href: "/account-statement", icon: BookOpen, tone: "bg-emerald-50 text-emerald-700" },
-                  { label: "Beneficiaries", href: "/fund-transfer/beneficiary/list", icon: Users, tone: "bg-rose-50 text-rose-700" },
-                  { label: "My Profile", href: "/my-profile", icon: Contact, tone: "bg-sky-50 text-sky-700" }
+                  { label: "Send Money", href: "/fund-transfer", icon: Send, tone: "amber" },
+                  { label: "Account Statement", href: "/account-statement", icon: BookOpen, tone: "green" },
+                  { label: "Manage Beneficiaries", href: "/fund-transfer/beneficiary/list", icon: Users, tone: "rose" },
+                  { label: "Profile Settings", href: "/my-profile", icon: Contact, tone: "blue" }
                 ].map((action) => {
                   const Icon = action.icon;
                   return (
-                    <Link href={action.href} key={action.label} className="min-w-0 px-0.5">
-                      <span className={cn("pnb-instant-action-icon", action.tone)}><Icon className="h-6 w-6" /></span>
-                      <span className="pnb-instant-action-label">{action.label}</span>
+                    <Link href={action.href} key={action.label} className={"pnb-dashboard-action-tile pnb-dashboard-action-" + action.tone}>
+                      <span><Icon className="h-7 w-7"/></span>
+                      <span>{action.label}</span>
                     </Link>
                   );
                 })}
@@ -358,7 +353,7 @@ function DashboardPageComponent() {
 
             {/* Popular Section */}
             <section>
-              <h2 className="font-headline font-bold text-sm text-gray-800 mb-2 px-1">Popular</h2>
+              <div className="mb-2 flex items-center justify-between px-1"><h2 className="pnb-section-title">QUICK LINKS</h2><Link href="/services" className="text-[11px] font-semibold text-primary">All Services <ChevronRight className="inline h-3 w-3"/></Link></div>
               {renderIconRow(popularItems)}
             </section>
     
@@ -381,7 +376,7 @@ function DashboardPageComponent() {
             {/* Invest / Apply Section */}
             <Card className="pnb-service-card shadow-sm">
                 <CardContent className="p-3 space-y-3">
-                    <h2 className="font-headline font-bold text-sm text-gray-800">Invest / Apply</h2>
+                    <Link href="/invest" className="flex items-center justify-between"><h2 className="font-headline font-bold text-sm text-gray-800">Invest / Apply</h2><ChevronRight className="h-4 w-4 text-primary"/></Link>
                     {renderInvestIconRow(investApplyItems)}
                 </CardContent>
             </Card>

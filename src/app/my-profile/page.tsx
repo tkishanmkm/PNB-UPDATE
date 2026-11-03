@@ -4,14 +4,9 @@
 import React from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Home, User, KeyRound, ShieldCheck, Fingerprint, Languages, Building, XCircle } from 'lucide-react';
+import { ArrowLeft, Home, User, KeyRound, ShieldCheck, Fingerprint, Languages, Building, XCircle, Landmark, FileText, Wallet } from 'lucide-react';
 
 const options = [
-    {
-        title: 'My Account',
-        icon: User,
-        href: '/my-account',
-    },
     {
         title: 'Set Account Nickname',
         icon: User,
@@ -47,25 +42,51 @@ const options = [
         icon: XCircle,
         href: '#',
     },
+    {
+        title: 'Security Settings',
+        icon: ShieldCheck,
+        href: '/settings',
+    },
 ];
 
 export default function MyProfilePage() {
     const router = useRouter();
+    const accountOptions = [
+        { title: 'My Account', icon: User, href: '/my-account' },
+        { title: 'Account Details', icon: Landmark, href: '/saving-account-details' },
+        { title: 'All Accounts', icon: Wallet, href: '/all-accounts' },
+        { title: 'Account Statement', icon: FileText, href: '/account-statement' },
+    ];
 
 
     const renderOption = (option: typeof options[0], index: number) => (
-        <Link
-            href={option.href}
-            key={option.title + "-" + index}
-            className="group flex min-w-0 flex-col items-center gap-2 rounded-2xl px-1 py-3 text-center transition-colors hover:bg-rose-50 active:bg-rose-100"
-        >
-            <span className="grid h-12 w-12 place-items-center rounded-2xl bg-rose-50 text-primary shadow-sm transition-transform group-hover:-translate-y-0.5">
-                <option.icon className="h-6 w-6" strokeWidth={1.8} />
-            </span>
-            <span className="line-clamp-2 min-h-8 text-[10px] font-semibold leading-4 text-gray-700">
-                {option.title}
-            </span>
-        </Link>
+        option.href === "#" ? (
+            <div
+                key={option.title + "-" + index}
+                aria-disabled="true"
+                className="flex min-w-0 cursor-not-allowed flex-col items-center gap-2 rounded-2xl px-1 py-3 text-center opacity-75"
+            >
+                <span className="grid h-12 w-12 place-items-center rounded-2xl bg-rose-50 text-primary shadow-sm">
+                    <option.icon className="h-6 w-6" strokeWidth={1.8} />
+                </span>
+                <span className="line-clamp-2 min-h-8 text-[10px] font-semibold leading-4 text-gray-700">
+                    {option.title}
+                </span>
+            </div>
+        ) : (
+            <Link
+                href={option.href}
+                key={option.title + "-" + index}
+                className="group flex min-w-0 flex-col items-center gap-2 rounded-2xl px-1 py-3 text-center transition-colors hover:bg-rose-50 active:bg-rose-100"
+            >
+                <span className="grid h-12 w-12 place-items-center rounded-2xl bg-rose-50 text-primary shadow-sm transition-transform group-hover:-translate-y-0.5">
+                    <option.icon className="h-6 w-6" strokeWidth={1.8} />
+                </span>
+                <span className="line-clamp-2 min-h-8 text-[10px] font-semibold leading-4 text-gray-700">
+                    {option.title}
+                </span>
+            </Link>
+        )
     );
 
     const renderGroup = (title: string, group: typeof options) => (
@@ -97,8 +118,8 @@ export default function MyProfilePage() {
                     <p className="text-xs font-semibold uppercase tracking-wider text-primary">Manage your profile</p>
                     <p className="mt-1 text-xs text-gray-500">Personal details, access and account preferences</p>
                 </section>
-                {renderGroup("Profile Settings", options.slice(0, 4))}
-                {renderGroup("Account Related Settings", options.slice(4))}
+                {renderGroup("Profile Settings", options)}
+                {renderGroup("Account Related Settings", accountOptions)}
             </main>
         </div>
     );
