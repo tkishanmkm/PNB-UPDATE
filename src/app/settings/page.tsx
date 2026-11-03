@@ -108,11 +108,11 @@ const AccountSettings = () => {
             <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                     <Label htmlFor="mpin">MPIN (Login)</Label>
-                    <Input id="mpin" value={user.mpin || ''} onChange={e => setUser({...user, mpin: e.target.value})} maxLength={4} />
+                    <Input id="mpin" type="password" inputMode="numeric" pattern="[0-9]*" autoComplete="off" value={user.mpin || '' } onChange={e => setUser({...user, mpin: e.target.value.replace(/\D/g, '').slice(0, 4)})} maxLength={4} />
                 </div>
                 <div className="space-y-2">
                     <Label htmlFor="tpin">TPIN (Transfer)</Label>
-                    <Input id="tpin" value={user.tpin || ''} onChange={e => setUser({...user, tpin: e.target.value})} maxLength={4} />
+                    <Input id="tpin" type="password" inputMode="numeric" pattern="[0-9]*" autoComplete="off" value={user.tpin || '' } onChange={e => setUser({...user, tpin: e.target.value.replace(/\D/g, '').slice(0, 4)})} maxLength={4} />
                 </div>
             </div>
              

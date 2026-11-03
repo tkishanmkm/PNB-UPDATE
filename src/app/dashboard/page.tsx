@@ -128,8 +128,8 @@ function DashboardPageComponent() {
 
   const renderIconRow = (items: typeof popularItems) => (
       <div className="grid grid-cols-5 gap-y-4 gap-x-2 text-center">
-          {items.map((item, index) => (
-              <Link href={item.href || '#'} key={index} className="shrink-0">
+          {items.map((item, index) => {
+              const tile = (
                   <div className="flex flex-col items-center space-y-1 p-0.5">
                       <div className={`flex items-center justify-center h-11 w-11 rounded-2xl bg-rose-50`}>
                          <DynamicIcon iconKey={item.iconKey} fallback={item.defaultIcon} className="h-5 w-5 text-primary" />
@@ -139,23 +139,29 @@ function DashboardPageComponent() {
                         {'tag' in item && item.tag && <span className="absolute -top-2.5 -right-1 bg-accent text-primary font-bold text-[8px] px-1 rounded">{item.tag}</span>}
                       </span>
                   </div>
-              </Link>
-          ))}
+              );
+              return item.href && item.href !== '#'
+                  ? <Link href={item.href} key={index} className="shrink-0">{tile}</Link>
+                  : <div key={index} aria-disabled="true" className="shrink-0">{tile}</div>;
+          })}
       </div>
   );
   
   const renderPayTransferIconRow = (items: typeof payTransferItems) => (
        <div className="grid grid-cols-4 gap-y-3 gap-x-2 text-center">
-          {items.map(({ iconKey, defaultIcon, label, href }, index) => (
-            <Link href={href || '#'} key={index} className="shrink-0">
+          {items.map(({ iconKey, defaultIcon, label, href }, index) => {
+            const tile = (
                 <div className="flex flex-col items-center space-y-2 p-1 rounded-lg hover:bg-red-50 transition-colors">
                     <div className="flex items-center justify-center h-12 w-12 rounded-2xl bg-rose-50">
                         <DynamicIcon iconKey={iconKey} fallback={defaultIcon} className="h-6 w-6 text-primary" />
                     </div>
                     <span className="text-xs font-medium text-gray-700 text-center leading-tight px-1">{label}</span>
                 </div>
-            </Link>
-          ))}
+            );
+            return href && href !== '#'
+                ? <Link href={href} key={index} className="shrink-0">{tile}</Link>
+                : <div key={index} aria-disabled="true" className="shrink-0">{tile}</div>;
+          })}
        </div>
   );
   
@@ -370,25 +376,30 @@ function DashboardPageComponent() {
       <footer className="fixed bottom-0 left-0 right-0 max-w-md mx-auto z-40">
             <div className="relative bg-card/95 backdrop-blur-sm h-16 flex items-center justify-around rounded-t-2xl border-t">
             {bottomNavItems.map((item) => {
+              const enabled = Boolean(item.href && item.href !== '#');
               if (item.isCentral) {
-                return (
-                  <Link href={item.href || "#"} key={item.label} className="relative -top-5 text-center">
+                const centralItem = (
+                  <div className="relative -top-5 text-center">
                     <div className="bg-primary rounded-full p-3.5 shadow-lg border-4 border-card">
                       <DynamicIcon iconKey={item.iconKey} fallback={item.defaultIcon} className="h-7 w-7 text-primary-foreground" />
                     </div>
                     <span className="font-semibold text-primary text-xs mt-1 block">{item.label}</span>
-                  </Link>
+                  </div>
                 );
+                return enabled
+                  ? <Link href={item.href!} key={item.label}>{centralItem}</Link>
+                  : <div key={item.label} aria-disabled="true">{centralItem}</div>;
               }
 
-              return (
-                <Link key={item.label} href={item.href || "#"} className="flex-1">
-                  <div className="flex flex-col items-center justify-center gap-1 text-primary">
-                     <DynamicIcon iconKey={item.iconKey} fallback={item.defaultIcon} className="h-5 w-5" />
-                    <span className="text-[11px] font-medium">{item.label}</span>
-                  </div>
-                </Link>
+              const navItem = (
+                <div className="flex flex-col items-center justify-center gap-1 text-primary">
+                   <DynamicIcon iconKey={item.iconKey} fallback={item.defaultIcon} className="h-5 w-5" />
+                  <span className="text-[11px] font-medium">{item.label}</span>
+                </div>
               );
+              return enabled
+                ? <Link key={item.label} href={item.href!} className="flex-1">{navItem}</Link>
+                : <div key={item.label} aria-disabled="true" className="flex-1">{navItem}</div>;
             })}
           </div>
         </footer>

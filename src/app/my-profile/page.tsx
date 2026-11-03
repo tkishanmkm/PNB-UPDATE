@@ -14,7 +14,7 @@ type ProfileItem = { title: string; icon: LucideIcon; href: string };
 
 const profileOptions: ProfileItem[] = [
   { title: "Change MPIN", icon: KeyRound, href: "#" },
-  { title: "Set/Reset TPIN", icon: ShieldCheck, href: "#" },
+  { title: "Set/Reset TPIN", icon: ShieldCheck, href: "/settings?tab=account" },
   { title: "Enable Biometrics", icon: Fingerprint, href: "#" },
   { title: "De-activation", icon: XCircle, href: "#" },
   { title: "Set User ID", icon: User, href: "/settings" },

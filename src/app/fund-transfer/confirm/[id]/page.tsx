@@ -123,8 +123,8 @@ function ConfirmTransferPage() {
                                 className="absolute inset-0 w-full h-full bg-transparent border-none outline-none text-transparent [caret-color:transparent]"
                             />
                         </div>
-                        <Link href="#" className="text-sm font-semibold text-primary">
-                            Forgot TPIN?
+                        <Link href="/settings?tab=account" className="text-sm font-semibold text-primary underline underline-offset-2">
+                            Forgot TPIN? Manage it in Settings.
                         </Link>
                     </div>
                 </main>
