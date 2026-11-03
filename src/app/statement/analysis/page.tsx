@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { Suspense, useEffect, useState } from 'react';
@@ -9,57 +8,65 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertTriangle, ArrowLeft, Home, Lightbulb, LineChart } from 'lucide-react';
-import { format, parseISO } from 'date-fns';
-import { analyzeStatement } from '@/ai/flows/ai-statement-analysis';
-import type { AnalyzeStatementOutput } from '@/ai/flows/ai-statement-analysis';
+import { format, isValid, parseISO } from 'date-fns';
+import { analyzeStatementLocally, type LocalStatementAnalysis } from '@/lib/statement-analysis';
 
 function AnalysisDisplay() {
   const searchParams = useSearchParams();
   const { state } = useAppContext();
-  
   const from = searchParams.get('from');
   const to = searchParams.get('to');
 
-  const [analysis, setAnalysis] = useState<AnalyzeStatementOutput | null>(null);
+  const [analysis, setAnalysis] = useState<LocalStatementAnalysis | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchAnalysis = async () => {
-      if (!from || !to) {
-        setError("Date range is missing.");
-        setIsLoading(false);
-        return;
-      }
+    if (!state.isStateInitialized) {
       setIsLoading(true);
-      setError(null);
-      const startDate = parseISO(from);
-      const endDate = parseISO(to);
-      try {
-        const filteredTransactions = state.transactions.filter(tx => {
-            const txDate = parseISO(tx.date);
-            return txDate >= startDate && txDate <= endDate;
-        });
-        if (filteredTransactions.length === 0) {
-            setAnalysis({ summary: "No transactions found for this period.", insights: "There are no insights to provide as there were no transactions in the selected date range." });
-            setIsLoading(false);
-            return;
-        }
-        const result = await analyzeStatement({ transactionHistory: filteredTransactions, startDate: from, endDate: to });
-        setAnalysis(result);
-      } catch (e) {
-        console.error("AI Analysis Error:", e);
-        setError("Failed to get analysis from AI. Please try again later.");
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    if (state.transactions?.length) fetchAnalysis();
-  }, [from, to, state.transactions]);
+      return;
+    }
+
+    setIsLoading(true);
+    setError(null);
+    setAnalysis(null);
+
+    if (!from || !to) {
+      setError('The statement date range is missing. Return to Account Statement and choose a period.');
+      setIsLoading(false);
+      return;
+    }
+
+    const startDate = parseISO(from);
+    const endDate = parseISO(to);
+    if (!isValid(startDate) || !isValid(endDate) || startDate.getTime() > endDate.getTime()) {
+      setError('The statement date range is invalid. Choose a valid start and end date.');
+      setIsLoading(false);
+      return;
+    }
+
+    const account = state.accounts?.[0];
+    if (!account?.id) {
+      setError('No account is available to analyse. Import an account statement or restore a valid backup.');
+      setIsLoading(false);
+      return;
+    }
+
+    try {
+      // All calculations run in this browser. Transaction details are not sent to an AI service.
+      const result = analyzeStatementLocally(state.transactions || [], account.id, startDate, endDate);
+      setAnalysis(result);
+    } catch (analysisError) {
+      console.error('Local statement analysis failed:', analysisError);
+      setError('Statement analysis could not be calculated from the saved transaction data.');
+    } finally {
+      setIsLoading(false);
+    }
+  }, [from, to, state.isStateInitialized, state.accounts, state.transactions]);
 
   if (isLoading) {
     return (
-      <div className="space-y-6">
+      <div className="space-y-6" aria-label="Loading statement analysis">
         <Card>
           <CardHeader className="flex flex-row items-center gap-4 space-y-0">
             <Skeleton className="h-10 w-10 rounded-full" />
@@ -90,7 +97,7 @@ function AnalysisDisplay() {
     return (
       <Alert variant="destructive">
         <AlertTriangle className="h-4 w-4" />
-        <AlertTitle>Error</AlertTitle>
+        <AlertTitle>Statement analysis unavailable</AlertTitle>
         <AlertDescription>{error}</AlertDescription>
       </Alert>
     );
@@ -98,60 +105,70 @@ function AnalysisDisplay() {
 
   return (
     <div className="space-y-6">
-        <Card>
-            <CardHeader className="flex flex-row items-center gap-4 space-y-0 pb-2">
-                <div className="p-2 bg-primary/10 rounded-full"><LineChart className="h-6 w-6 text-primary" /></div>
-                <CardTitle className="font-headline text-lg">Spending Summary</CardTitle>
-            </CardHeader>
-            <CardContent><p className="text-sm text-foreground whitespace-pre-wrap">{analysis?.summary}</p></CardContent>
-        </Card>
-        <Card>
-            <CardHeader className="flex flex-row items-center gap-4 space-y-0 pb-2">
-                <div className="p-2 bg-primary/10 rounded-full"><Lightbulb className="h-6 w-6 text-primary" /></div>
-                <CardTitle className="font-headline text-lg">Financial Insights</CardTitle>
-            </CardHeader>
-            <CardContent><p className="text-sm text-foreground whitespace-pre-wrap">{analysis?.insights}</p></CardContent>
-        </Card>
+      <p className="text-xs text-muted-foreground">
+        Calculated locally from this account’s saved transactions. Your transaction descriptions and amounts are not sent to an external analysis service.
+      </p>
+      <Card>
+        <CardHeader className="flex flex-row items-center gap-4 space-y-0 pb-2">
+          <div className="rounded-full bg-primary/10 p-2"><LineChart className="h-6 w-6 text-primary" /></div>
+          <CardTitle className="font-headline text-lg">Spending Summary</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="whitespace-pre-wrap text-sm text-foreground">{analysis?.summary}</p>
+          {analysis && <p className="mt-3 text-xs text-muted-foreground">{analysis.transactionCount} matching transactions</p>}
+        </CardContent>
+      </Card>
+      <Card>
+        <CardHeader className="flex flex-row items-center gap-4 space-y-0 pb-2">
+          <div className="rounded-full bg-primary/10 p-2"><Lightbulb className="h-6 w-6 text-primary" /></div>
+          <CardTitle className="font-headline text-lg">Financial Insights</CardTitle>
+        </CardHeader>
+        <CardContent><p className="whitespace-pre-wrap text-sm text-foreground">{analysis?.insights}</p></CardContent>
+      </Card>
     </div>
   );
 }
 
 function AnalysisPageHeader() {
-    const searchParams = useSearchParams();
-    const from = searchParams.get('from');
-    const to = searchParams.get('to');
-    if (!from || !to) return null;
-    const startDate = parseISO(from);
-    const endDate = parseISO(to);
+  const searchParams = useSearchParams();
+  const from = searchParams.get('from');
+  const to = searchParams.get('to');
+  const startDate = from ? parseISO(from) : null;
+  const endDate = to ? parseISO(to) : null;
+  const validPeriod = Boolean(startDate && endDate && isValid(startDate) && isValid(endDate) && startDate <= endDate);
 
-    return (
-        <div className="mb-6">
-            <h1 className="text-2xl font-bold font-headline">AI Statement Analysis</h1>
-            <p className="text-muted-foreground">{format(startDate, 'MMM dd, yyyy')} - {format(endDate, 'MMM dd, yyyy')}</p>
-        </div>
-    )
+  return (
+    <div className="mb-6">
+      <h1 className="text-2xl font-bold font-headline">Statement Analysis</h1>
+      {validPeriod && startDate && endDate
+        ? <p className="text-muted-foreground">{format(startDate, 'MMM dd, yyyy')} - {format(endDate, 'MMM dd, yyyy')}</p>
+        : <p className="text-muted-foreground">Select a valid date range from Account Statement.</p>}
+    </div>
+  );
 }
 
 export default function StatementAnalysisPage() {
-    const router = useRouter();
-    return (
-        <div className="pnb-page min-h-screen bg-gray-50">
-            <header className="pnb-page-header sticky top-0 z-20 flex items-center justify-between bg-primary p-4 text-primary-foreground shadow-md">
-                <button onClick={() => router.back()} aria-label="Go back"><ArrowLeft className="h-6 w-6 text-white" /></button>
-                <h1 className="text-base font-semibold">Statement Analysis</h1>
-                <Link href="/dashboard" aria-label="Home"><Home className="h-6 w-6 text-white" /></Link>
-            </header>
-            <main className="p-4">
-            <Suspense fallback={
-                <div className="mb-6">
-                    <Skeleton className="h-8 w-1/2 mb-2" />
-                    <Skeleton className="h-4 w-1/3" />
-                </div>
-            }>
-                <AnalysisPageHeader />
-            </Suspense>
-            <AnalysisDisplay />
-            </main>
-        </div>
-    )
+  const router = useRouter();
+  return (
+    <div className="pnb-page min-h-screen bg-gray-50">
+      <header className="pnb-page-header sticky top-0 z-20 flex items-center justify-between bg-primary p-4 text-primary-foreground shadow-md">
+        <button onClick={() => router.back()} aria-label="Go back"><ArrowLeft className="h-6 w-6 text-white" /></button>
+        <h1 className="text-base font-semibold">Statement Analysis</h1>
+        <Link href="/dashboard" aria-label="Home"><Home className="h-6 w-6 text-white" /></Link>
+      </header>
+      <main className="p-4">
+        <Suspense fallback={
+          <div className="mb-6">
+            <Skeleton className="mb-2 h-8 w-1/2" />
+            <Skeleton className="h-4 w-1/3" />
+          </div>
+        }>
+          <AnalysisPageHeader />
+        </Suspense>
+        <Suspense fallback={<div className="space-y-3"><Skeleton className="h-28 w-full" /><Skeleton className="h-28 w-full" /></div>}>
+          <AnalysisDisplay />
+        </Suspense>
+      </main>
+    </div>
+  );
 }

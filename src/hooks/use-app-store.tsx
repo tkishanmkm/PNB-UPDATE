@@ -4,6 +4,7 @@ import React, { createContext, useReducer, useContext, useEffect } from 'react';
 import type { AppState, Action, Transaction } from '@/lib/types';
 import { defaultState } from '@/lib/mock-data';
 import { getStateFromIndexedDB, saveStateToIndexedDB, clearStateFromIndexedDB } from '@/lib/indexeddb';
+import { reconcileTransactionUpdate } from '@/lib/transaction-ledger';
 
 // Define a new context shape to include appData and setAppData
 const AppContext = createContext<{
@@ -51,11 +52,10 @@ const appReducer = (state: AppState, action: Action): AppState => {
     }
     case 'UPDATE_TRANSACTION': {
         const { originalId, updatedTransaction } = action.payload;
-        const newState = {
-            ...state,
-            transactions: state.transactions.map(tx => tx.id === originalId ? updatedTransaction : tx)
-        };
-        saveStateToIndexedDB(newState).catch(err => console.error("Failed to save state to IndexedDB after updating transaction", err));
+        const reconciled = reconcileTransactionUpdate(state.transactions, state.accounts, originalId, updatedTransaction);
+        if (!reconciled) return state;
+        const newState = { ...state, ...reconciled };
+        saveStateToIndexedDB(newState).catch(err => console.error("Failed to save reconciled transaction ledger to IndexedDB", err));
         return newState;
     }
     case 'UPDATE_USER': {
@@ -111,8 +111,10 @@ const appReducer = (state: AppState, action: Action): AppState => {
             accounts: [account],
             transactions: transactions.map(tx => ({ ...tx, accountId: account.id })),
             user: { ...state.user, name: account.accountHolder, accounts: [account] },
-            payees: [],
-            chatHistory: [],
+            // A statement replaces account and ledger data only; unrelated payees
+            // and support history remain available after a new statement is imported.
+            payees: state.payees,
+            chatHistory: state.chatHistory,
             currentTransfer: {},
         };
         saveStateToIndexedDB(newState).catch(err => console.error("Failed to persist replacement statement data", err));

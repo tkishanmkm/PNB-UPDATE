@@ -20,6 +20,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense } from 'react';
 import { saveStateToIndexedDB, getStorageEstimate, requestPersistentStorage } from '@/lib/indexeddb';
 import { defaultState } from '@/lib/mock-data';
+import { createStatementJsonExport, normalizeStatementJson } from '@/lib/statement-json';
 
 const normalizeImageDataUrls = (value: unknown): unknown => {
     if (typeof value === 'string') {
@@ -1015,6 +1016,9 @@ const PdfExtraction = () => {
     const [file, setFile] = useState<File | null>(null);
     const [isExtracting, setIsExtracting] = useState(false);
     const [previewData, setPreviewData] = useState<Transaction[]>([]);
+    const [hasPreview, setHasPreview] = useState(false);
+    const [canSavePreview, setCanSavePreview] = useState(false);
+    const [statementAccountId, setStatementAccountId] = useState<string | null>(null);
     const [statementAccountNumber, setStatementAccountNumber] = useState<string | null>(null);
     const [statementDetails, setStatementDetails] = useState<ExtractedStatementDetails | null>(null);
     const importInputRef = useRef<HTMLInputElement>(null);
@@ -1029,8 +1033,10 @@ const PdfExtraction = () => {
         if (e.target.files && e.target.files[0]) {
             setFile(e.target.files[0]);
             setPreviewData([]);
+            setHasPreview(false);
+            setCanSavePreview(false);
+            setStatementAccountId(null);
             setStatementAccountNumber(null);
-
             setStatementDetails(null);
         }
     };
@@ -1053,6 +1059,9 @@ const PdfExtraction = () => {
                     const accountNumber = details.accountNumber;
                     const destinationAccountId = accountNumber ? 'statement-' + accountNumber.replace(/\D/g, '') : 'statement-import';
                     setStatementDetails(details);
+                    setHasPreview(true);
+                    setCanSavePreview(Boolean(accountNumber));
+                    setStatementAccountId(destinationAccountId);
                     // Keep every parsed row, including repeated payments. Saving replaces the old dataset.
                     const statementTransactions = results.map((transaction, index) => ({
                         ...transaction,
@@ -1060,7 +1069,6 @@ const PdfExtraction = () => {
                         accountId: destinationAccountId,
                     }));
                     setStatementAccountNumber(accountNumber);
-
                     setPreviewData(statementTransactions);
                     setIsExtracting(false);
                     toast({
@@ -1088,40 +1096,48 @@ const PdfExtraction = () => {
 
     const handleSavePreview = async () => {
         const accountNumber = normalizeAccountNumber(statementAccountNumber);
+        if (!hasPreview) {
+            toast({ variant: 'destructive', title: 'No statement preview', description: 'Extract a PDF or import a statement JSON file before replacing app data.' });
+            return;
+        }
+        if (!canSavePreview) {
+            toast({ variant: 'destructive', title: 'Account mismatch', description: 'This JSON statement does not match an account saved in the app. Existing data was not changed.' });
+            return;
+        }
         if (!accountNumber) {
             toast({ variant: 'destructive', title: 'Account number not found', description: 'The statement must contain an identifiable account number before replacing app data.' });
             return;
         }
-        const template = state.accounts[0];
+        const template = state.accounts.find(item => normalizeAccountNumber(item.accountNumber) === accountNumber) || state.accounts[0];
         if (!template) {
             toast({ variant: 'destructive', title: 'Cannot save statement', description: 'The app account template is missing.' });
             return;
         }
         const details = statementDetails;
-        const accountId = 'statement-' + accountNumber;
+        const accountId = statementAccountId || ('statement-' + accountNumber);
         const account: AccountDetails = {
             ...template,
             id: accountId,
             userId: state.user.id || accountId,
             accountNumber,
-            type: details?.accountType || 'Savings',
-            balance: details?.closingBalance ?? 0,
-            accountHolder: details?.accountHolder || '',
-            customerAddress: details?.customerAddress || '',
-            customerCity: details?.customerCity || '',
-            customerPin: details?.customerPin || '',
-            branchName: details?.branchName || '',
-            branchAddress: details?.branchAddress || '',
-            branchCity: details?.branchCity || '',
-            branchPin: details?.branchPin || '',
-            ifsc: details?.ifsc || '',
-            micrCode: details?.micrCode || '',
-            customerId: details?.customerId || '',
-            ckycNumber: details?.ckycNumber || '',
-            nominee: details?.nominee || '',
-            averageQuarterlyBalance: undefined,
-            upiId: undefined,
-            status: undefined,
+            type: details?.accountType || template.type,
+            balance: details?.closingBalance ?? template.balance,
+            accountHolder: details?.accountHolder || template.accountHolder || '',
+            customerAddress: details?.customerAddress || template.customerAddress || '',
+            customerCity: details?.customerCity || template.customerCity || '',
+            customerPin: details?.customerPin || template.customerPin || '',
+            branchName: details?.branchName || template.branchName || '',
+            branchAddress: details?.branchAddress || template.branchAddress || '',
+            branchCity: details?.branchCity || template.branchCity || '',
+            branchPin: details?.branchPin || template.branchPin || '',
+            ifsc: details?.ifsc || template.ifsc || '',
+            micrCode: details?.micrCode || template.micrCode || '',
+            customerId: details?.customerId || template.customerId || '',
+            ckycNumber: details?.ckycNumber || template.ckycNumber || '',
+            nominee: details?.nominee || template.nominee || '',
+            averageQuarterlyBalance: template.averageQuarterlyBalance,
+            upiId: template.upiId,
+            status: template.status,
             currencySymbol: template.currencySymbol || state.settings.currencySymbol,
         };
         const replacementTransactions = previewData.map((tx, index) => ({
@@ -1131,25 +1147,33 @@ const PdfExtraction = () => {
         }));
         dispatch({ type: 'REPLACE_STATEMENT_DATA', payload: { account, transactions: replacementTransactions } });
         const missing: string[] = [];
-        if (!details?.accountHolder) missing.push('customer name');
-        if (!details?.customerAddress) missing.push('customer address');
-        if (!details?.customerPin) missing.push('customer PIN');
-        if (!details?.branchName) missing.push('branch name');
-        if (!details?.branchAddress) missing.push('branch address');
-        if (details?.closingBalance === null || details?.closingBalance === undefined) missing.push('closing balance');
+        if (details) {
+            if (!details.accountHolder) missing.push('customer name');
+            if (!details.customerAddress) missing.push('customer address');
+            if (!details.customerPin) missing.push('customer PIN');
+            if (!details.branchName) missing.push('branch name');
+            if (!details.branchAddress) missing.push('branch address');
+            if (details.closingBalance === null || details.closingBalance === undefined) missing.push('closing balance');
+        }
         toast({
             title: 'Statement data replaced',
             description: replacementTransactions.length + ' transactions saved. Previous accounts and transactions were replaced. App logo and banner settings were preserved.' + (missing.length ? ' Could not detect: ' + missing.join(', ') + '. Please verify these fields in the PDF.' : ''),
         });
         setPreviewData([]);
+        setHasPreview(false);
+        setCanSavePreview(false);
         setFile(null);
+        setStatementAccountId(null);
         setStatementAccountNumber(null);
-
         setStatementDetails(null);
     };
 
     const handleExport = () => {
-        const json = JSON.stringify({ accountNumber: statementAccountNumber, transactions: previewData, timestamp: new Date().toISOString() }, null, 2);
+        const json = JSON.stringify(
+            createStatementJsonExport(statementAccountNumber, statementDetails, previewData),
+            null,
+            2,
+        );
         const blob = new Blob([json], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
@@ -1167,38 +1191,24 @@ const PdfExtraction = () => {
         const reader = new FileReader();
         reader.onload = (event) => {
             try {
-                const data = JSON.parse(event.target?.result as string);
-                if (!data || !Array.isArray(data.transactions)) throw new Error("Invalid structure");
-                const importedAccountNumber = typeof data.accountNumber === 'string' ? data.accountNumber : null;
-                const destinationAccountId = findMatchingAccountId(importedAccountNumber);
-                const transactions = data.transactions.map((transaction: unknown, index: number) => {
-                    if (!transaction || typeof transaction !== 'object') throw new Error(`Invalid transaction ${index + 1}`);
-                    const item = transaction as Partial<Transaction>;
-                    const amount = Number(item.amount);
-                    if (!item.date || !Number.isFinite(Date.parse(item.date)) || typeof item.description !== 'string' || !Number.isFinite(amount)) {
-                        throw new Error(`Invalid transaction ${index + 1}`);
-                    }
-                    const type = item.type === 'credit' || item.type === 'debit' ? item.type : amount < 0 ? 'debit' : 'credit';
-                    return {
-                        ...item,
-                        id: typeof item.id === 'string' && item.id ? item.id : `imported-pdf-${index + 1}`,
-                        amount: type === 'debit' ? -Math.abs(amount) : Math.abs(amount),
-                        type,
-                        accountId: destinationAccountId || 'unmatched',
-                    } as Transaction;
-                });
-                setStatementAccountNumber(importedAccountNumber);
-
-                setStatementDetails(null);
-                setPreviewData(transactions);
+                const data: unknown = JSON.parse(String(event.target?.result || ''));
+                const preview = normalizeStatementJson(data, findMatchingAccountId);
+                setStatementAccountNumber(preview.accountNumber);
+                setStatementAccountId(preview.accountId);
+                setCanSavePreview(preview.canSave);
+                setHasPreview(true);
+                setStatementDetails(preview.statementDetails);
+                setPreviewData(preview.transactions);
                 toast({
                     title: "Import Ready",
-                    description: destinationAccountId
-                        ? "Extracted transactions match a saved account. Review before saving."
-                        : "Preview only: the JSON has no matching saved account number, so saving is blocked.",
+                    description: preview.canSave
+                        ? "The JSON account matches a saved account. Review the statement details and transactions before saving."
+                        : "Preview only: the JSON account does not match a saved account, so replacing app data is blocked.",
                 });
-            } catch {
-                toast({ variant: 'destructive', title: "Import Error", description: "Invalid JSON format." });
+            } catch (error) {
+                const message = error instanceof Error ? error.message : "Invalid JSON format.";
+                toast({ variant: 'destructive', title: "Import Error", description: message });
+                if (importInputRef.current) importInputRef.current.value = '';
             }
         };
         reader.readAsText(file);
@@ -1213,11 +1223,13 @@ const PdfExtraction = () => {
                     {isExtracting ? 'Extracting...' : 'Extract Transactions'}
                 </Button>
             </div>
-            {previewData.length > 0 && (
+            {hasPreview && (
                 <div className="space-y-2 mt-4">
                     <div className="rounded border p-3 text-sm">
                         <p className="text-muted-foreground">Saving will replace all saved account and transaction data with this statement. App logo, banner, and appearance settings will be preserved.</p>
-                        {statementAccountNumber && <p className="text-muted-foreground mt-1">Statement account ending in {statementAccountNumber.slice(-4)}.</p>}
+                        {statementAccountNumber && <p className="text-muted-foreground mt-1">Statement account ending in {normalizeAccountNumber(statementAccountNumber).slice(-4)}.</p>}
+                        {!canSavePreview && <p className="mt-2 text-xs font-medium text-amber-700">This imported JSON account does not match a saved account. Replacing app data is disabled to protect your existing records.</p>}
+                        {!statementAccountNumber && <p className="mt-2 text-xs font-medium text-amber-700">No account number was detected. You can export this preview, but cannot replace app data.</p>}
                         {statementDetails?.accountHolder && <p>Account holder: {statementDetails.accountHolder}</p>}
                         {statementDetails?.customerAddress && <p>Address: {statementDetails.customerAddress}</p>}
                         {statementDetails?.customerPin && <p>Customer PIN: {statementDetails.customerPin}</p>}
@@ -1236,7 +1248,7 @@ const PdfExtraction = () => {
                         {previewData.map((tx, i) => <div key={i}>{new Date(tx.date).toLocaleDateString()} - {tx.description} - {tx.amount}</div>)}
                     </div>
                     <div className="grid grid-cols-2 gap-2">
-                        <Button onClick={handleSavePreview} disabled={!statementAccountNumber}>Replace App Data</Button>
+                        <Button onClick={handleSavePreview} disabled={!statementAccountNumber || !canSavePreview}>Replace App Data</Button>
                         <Button onClick={handleExport} variant="outline">Export as JSON</Button>
                     </div>
                 </div>

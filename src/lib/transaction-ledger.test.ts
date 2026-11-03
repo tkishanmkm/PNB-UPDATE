@@ -1,0 +1,44 @@
+import { describe, it } from 'node:test';
+import assert from 'node:assert/strict';
+import type { AccountDetails, Transaction } from './types';
+import { reconcileTransactionUpdate } from './transaction-ledger';
+
+const account: AccountDetails = {
+  id: 'account-a', userId: 'user-a', accountNumber: '1234567890', type: 'Savings',
+  balance: 900, currencySymbol: '₹', accountHolder: 'Example', customerAddress: '',
+  customerCity: '', customerPin: '', branchName: '', branchAddress: '', branchCity: '',
+  branchPin: '', ifsc: '', ckycNumber: '', nominee: '',
+};
+
+const history: Transaction[] = [
+  { id: 't3', accountId: 'account-a', date: '2026-02-03T10:00:00.000Z', description: 'Later credit', amount: 100, type: 'credit', balanceAfter: 900 },
+  { id: 't2', accountId: 'account-a', date: '2026-02-02T10:00:00.000Z', description: 'Edited debit', amount: -100, type: 'debit', balanceAfter: 800 },
+  { id: 't1', accountId: 'account-a', date: '2026-02-01T10:00:00.000Z', description: 'Earlier credit', amount: 900, type: 'credit', balanceAfter: 900 },
+];
+
+describe('transaction ledger reconciliation', () => {
+  it('updates the closing balance and later source balance anchors after an amount edit', () => {
+    const result = reconcileTransactionUpdate(history, [account], 't2', { ...history[1], amount: -50 });
+    assert.ok(result);
+    assert.equal(result.accounts[0].balance, 950);
+    assert.equal(result.transactions.find(item => item.id === 't2')?.balanceAfter, 850);
+    assert.equal(result.transactions.find(item => item.id === 't3')?.balanceAfter, 950);
+    assert.equal(result.transactions.find(item => item.id === 't1')?.balanceAfter, 900);
+  });
+
+  it('repositions a dated transaction and drops its stale imported balance anchor', () => {
+    const edited = { ...history[1], date: '2026-02-04T10:00:00.000Z' };
+    const result = reconcileTransactionUpdate(history, [account], 't2', edited);
+    assert.ok(result);
+    assert.equal(result.accounts[0].balance, 900);
+    assert.equal(result.transactions[0].id, 't2');
+    assert.equal(result.transactions.find(item => item.id === 't3')?.balanceAfter, 1000);
+    assert.equal(result.transactions.find(item => item.id === 't2')?.balanceAfter, undefined);
+  });
+
+  it('rejects primary ID changes, invalid amounts and missing accounts', () => {
+    assert.equal(reconcileTransactionUpdate(history, [account], 't2', { ...history[1], id: 'new-id' }), null);
+    assert.equal(reconcileTransactionUpdate(history, [account], 't2', { ...history[1], amount: Number.NaN }), null);
+    assert.equal(reconcileTransactionUpdate(history, [], 't2', history[1]), null);
+  });
+});

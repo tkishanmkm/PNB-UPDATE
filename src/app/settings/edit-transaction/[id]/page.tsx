@@ -53,13 +53,35 @@ export default function EditTransactionPage() {
     };
 
     const handleSave = () => {
-        if (transaction) {
-            dispatch({ type: 'UPDATE_TRANSACTION', payload: { originalId: transactionId, updatedTransaction: transaction } });
-            toast({ title: "Success", description: "Transaction updated successfully." });
-            router.push('/settings?tab=data');
-        } else {
+        if (!transaction) {
             toast({ variant: 'destructive', title: "Error", description: "No transaction to update." });
+            return;
         }
+        if (transaction.id !== transactionId) {
+            toast({ variant: 'destructive', title: "Invalid transaction ID", description: "The transaction reference is fixed so receipts and linked entries remain consistent." });
+            return;
+        }
+        if (!Number.isFinite(transaction.amount) || Math.abs(transaction.amount) <= 0) {
+            toast({ variant: 'destructive', title: "Invalid amount", description: "Enter a transaction amount greater than zero." });
+            return;
+        }
+        if (!transaction.description.trim() || !Number.isFinite(Date.parse(transaction.date))) {
+            toast({ variant: 'destructive', title: "Invalid transaction details", description: "Enter a description and a valid transaction date." });
+            return;
+        }
+        const linkedAccount = state.accounts.find(account => account.id === transaction.accountId);
+        if (!linkedAccount) {
+            toast({ variant: 'destructive', title: "Account not found", description: "This transaction is not linked to a saved account and cannot safely update its ledger." });
+            return;
+        }
+        if (!Number.isFinite(linkedAccount.balance)) {
+            toast({ variant: 'destructive', title: "Invalid account balance", description: "The saved account balance is invalid. Repair the account data before editing this transaction." });
+            return;
+        }
+
+        dispatch({ type: 'UPDATE_TRANSACTION', payload: { originalId: transactionId, updatedTransaction: transaction } });
+        toast({ title: "Success", description: "Transaction updated and account/running balances reconciled." });
+        router.push('/settings?tab=data');
     };
 
     if (!transaction) {
@@ -125,11 +147,8 @@ export default function EditTransactionPage() {
                 <CardContent className="space-y-4">
                     <div className="space-y-2">
                         <Label>Transaction ID (Reference ID)</Label>
-                        <Input 
-                            value={transaction.id}
-                            onChange={e => handleUpdate('id', e.target.value)}
-                        />
-                         <p className="text-xs text-muted-foreground">This is the main reference ID for the transaction.</p>
+                        <Input value={transaction.id} readOnly />
+                         <p className="text-xs text-muted-foreground">This reference ID is fixed to keep linked receipts and charge entries consistent.</p>
                     </div>
                     <div className="space-y-2">
                         <Label>Type</Label>
@@ -151,8 +170,10 @@ export default function EditTransactionPage() {
                     <div className="space-y-2">
                         <Label>Amount</Label>
                         <Input 
-                            type="number" 
-                            value={Math.abs(transaction.amount)}
+                            type="number"
+                            min="0.01"
+                            step="0.01"
+                            value={Number.isFinite(transaction.amount) ? Math.abs(transaction.amount) : ''}
                             onChange={e => handleUpdate('amount', e.target.value)}
                         />
                     </div>

@@ -5,7 +5,7 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Home, FileText, FileDown } from "lucide-react";
+import { ArrowLeft, Home, FileText, FileDown, LineChart } from "lucide-react";
 import type { Transaction } from "@/lib/types";
 import { format, isValid, parseISO, startOfDay } from "date-fns";
 import StatementPDF from "@/components/statement-pdf";
@@ -175,10 +175,12 @@ export function StatementContent() {
                         <FileDown className="h-6 w-6" />
                         <span>{isGeneratingPdf ? 'Generating...' : 'Download PDF'}</span>
                     </Button>
-                     <Button variant="ghost" className="flex flex-col items-center h-full text-white" onClick={() => { toast({ title: "Coming Soon", description: "XLS download is not yet implemented."}) }}>
-                        <FileDown className="h-6 w-6" />
-                        <span>Download XLS</span>
-                    </Button>
+                     <Link href={`/statement/analysis?from=${encodeURIComponent(from || '')}&to=${encodeURIComponent(to || '')}`} className="flex h-full flex-1">
+                        <Button variant="ghost" className="flex h-full w-full flex-col items-center text-white">
+                            <LineChart className="h-6 w-6" />
+                            <span>Analysis</span>
+                        </Button>
+                    </Link>
                 </div>
             </footer>
         </div>
