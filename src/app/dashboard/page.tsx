@@ -15,6 +15,7 @@ import SideNav from '@/components/side-nav';
 import { RupeeIcon } from "@/components/rupee-icon";
 import DynamicIcon from "@/components/dynamic-icon";
 import type { IconAssets } from "@/lib/types";
+import { getActiveAccount } from "@/lib/accounts";
 
 
 const UPIIcon = () => (
@@ -114,7 +115,7 @@ function DashboardPageComponent() {
     dispatch({ type: 'LOGOUT_PENDING' });
   }, [dispatch]);
 
-  const account = state.accounts[0];
+  const account = getActiveAccount(state);
 
   if (!account) {
     // Optional: Render a loading state or a message if no account is found

@@ -9,6 +9,7 @@ import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import Image from 'next/image';
 import type { Transaction } from '@/lib/types';
+import { getActiveAccount } from '@/lib/accounts';
 
 const OtpIcon = ({ avatarUrl }: { avatarUrl: string }) => {
     return (
@@ -55,7 +56,9 @@ function VerifyTransfer() {
     const [isProcessing, setIsProcessing] = useState(false);
     const processingRef = useRef(false);
     const popupTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-    const account = state.accounts[0];
+    const account = currentTransfer.accountId
+        ? state.accounts.find(item => item.id === currentTransfer.accountId)
+        : getActiveAccount(state);
     const transferId = currentTransfer.transferId;
     const transferMode = currentTransfer.transferMode || 'imps';
     const existingTransfer = transferId
@@ -79,7 +82,7 @@ function VerifyTransfer() {
         if (!payee || !account || !Number.isFinite(currentTransfer.amount) || !currentTransfer.amount || !transferId) {
             router.replace('/fund-transfer');
         }
-    }, [existingTransfer, payee, account, currentTransfer.amount, transferId, router, buildReceiptUrl]);
+    }, [existingTransfer, payee, account, currentTransfer.amount, currentTransfer.accountId, transferId, router, buildReceiptUrl]);
 
     const generateOtp = useCallback(() => {
         const values = new Uint32Array(1);
@@ -100,7 +103,9 @@ function VerifyTransfer() {
         }
 
         const transferAmount = currentTransfer.amount;
-        const activeAccount = state.accounts.find(item => item.id === account?.id);
+        const activeAccount = account
+            ? state.accounts.find(item => item.id === account.id)
+            : undefined;
         if (!payee || !activeAccount || !transferId || !Number.isFinite(transferAmount) || !transferAmount || transferAmount <= 0) {
             toast({ variant: 'destructive', title: 'Transfer details unavailable', description: 'Return to the transfer form and review the details.' });
             router.replace('/fund-transfer');
@@ -190,7 +195,7 @@ function VerifyTransfer() {
             clearTimeout(showTimer);
             if (popupTimerRef.current) clearTimeout(popupTimerRef.current);
         };
-    }, [triggerOtpSequence, payee, account, currentTransfer.amount, transferId, existingTransfer]);
+    }, [triggerOtpSequence, payee, account, currentTransfer.amount, currentTransfer.accountId, transferId, existingTransfer]);
 
     const handleOtpChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const value = e.target.value;

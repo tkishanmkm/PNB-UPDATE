@@ -8,6 +8,7 @@ import { ChevronDown, ArrowLeft, Home } from 'lucide-react';
 import Link from 'next/link';
 import { formatCurrency } from '@/lib/utils';
 import { RupeeIcon } from '@/components/rupee-icon';
+import { getActiveAccount } from '@/lib/accounts';
 
 const PNBIcon = () => (
     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -19,7 +20,16 @@ const PNBIcon = () => (
 export default function BeneficiaryTransferPage() {
     const { state } = useAppContext();
     const router = useRouter();
-    const account = state.accounts[0];
+    const account = getActiveAccount(state);
+
+    if (!account) {
+        return (
+            <div className="pnb-page flex min-h-screen flex-col items-center justify-center gap-3 p-6 text-center">
+                <p className="text-sm text-gray-600">No account is available. Add or import an account before starting a transfer.</p>
+                <Link href="/settings" className="rounded-xl bg-primary px-5 py-3 text-sm font-semibold text-white">Open Settings</Link>
+            </div>
+        );
+    }
 
     return (
         <div className="pnb-page flex flex-col min-h-screen bg-gray-50">
@@ -51,6 +61,11 @@ export default function BeneficiaryTransferPage() {
                             <ChevronDown className="h-5 w-5 text-muted-foreground" />
                         </div>
                         <p className="text-xs text-muted-foreground mt-1 px-1 flex items-center tracking-tighter">Available Balance: <RupeeIcon className="w-3 h-3 mx-0.5" />{formatCurrency(account.balance)}</p>
+                        {state.accounts.length > 1 && (
+                            <Link href="/all-accounts" className="mt-2 inline-flex px-1 text-xs font-semibold text-primary underline underline-offset-2">
+                                Change transfer account
+                            </Link>
+                        )}
                     </div>
                     
                     {/* Transfer To */}

@@ -8,11 +8,14 @@ import { useAppContext } from '@/hooks/use-app-store';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ArrowLeft, Banknote, Home } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils';
+import { useToast } from '@/hooks/use-toast';
+import { Button } from '@/components/ui/button';
 import { RupeeIcon } from '@/components/rupee-icon';
 
 export default function AllAccountsPage() {
-  const { state } = useAppContext();
+  const { state, dispatch } = useAppContext();
   const router = useRouter();
+  const { toast } = useToast();
 
   return (
     <div className="pnb-page min-h-screen bg-gray-50">
@@ -38,6 +41,22 @@ export default function AllAccountsPage() {
               <p className="mt-2 flex items-center text-2xl font-bold font-headline tracking-tighter">
                 <RupeeIcon className="mr-0.5 h-5 w-5" /> {formatCurrency(account.balance)}
               </p>
+              <div className="mt-3 flex items-center justify-between gap-2">
+                {state.activeAccountId === account.id
+                  ? <span className="text-xs font-semibold text-primary">Currently selected</span>
+                  : <span className="text-xs text-muted-foreground">Available account</span>}
+                <Button
+                  size="sm"
+                  variant={state.activeAccountId === account.id ? 'secondary' : 'outline'}
+                  disabled={state.activeAccountId === account.id}
+                  onClick={() => {
+                    dispatch({ type: 'SET_ACTIVE_ACCOUNT', payload: { accountId: account.id } });
+                    toast({ title: 'Account selected', description: 'Account ...' + account.accountNumber.slice(-4) + ' is now active.' });
+                  }}
+                >
+                  {state.activeAccountId === account.id ? 'Selected' : 'Select account'}
+                </Button>
+              </div>
             </CardContent>
           </Card>
         )) : (

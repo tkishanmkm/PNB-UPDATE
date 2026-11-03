@@ -1,4 +1,5 @@
 import type { AccountDetails, Transaction } from '@/lib/types';
+import { sortTransactionsNewestFirst } from '@/lib/transaction-order';
 
 export interface TransactionLedgerUpdate {
   transactions: Transaction[];
@@ -64,9 +65,7 @@ export function reconcileTransactionUpdate(
     if (!Number.isFinite(aTime) || !Number.isFinite(bTime)) return a.originalIndex - b.originalIndex;
     return bTime - aTime || a.originalIndex - b.originalIndex;
   });
-  const newChronologicalIndex = sorted.findIndex(item => item.originalIndex === originalIndex);
-
-  const adjustedTransactions = sorted.map((item, sortedIndex) => {
+  const adjustedTransactions = sortTransactionsNewestFirst(sorted.map(item => {
     const transaction = item.transaction;
     if (transaction.accountId !== original.accountId || typeof transaction.balanceAfter !== 'number' || !Number.isFinite(transaction.balanceAfter)) {
       return transaction;
@@ -83,7 +82,7 @@ export function reconcileTransactionUpdate(
     // The stored list is newest-first; equal-date rows retain their stable
     // source order and are replayed in reverse by statement-balance calculation.
     const afterOldPosition = compareChronologically(transactionTime, item.originalIndex, oldTime, originalIndex) > 0;
-    const afterNewPosition = compareChronologically(transactionTime, sortedIndex, newTime, newChronologicalIndex) > 0;
+    const afterNewPosition = compareChronologically(transactionTime, item.originalIndex, newTime, originalIndex) > 0;
     const adjustedPaise = Math.round(transaction.balanceAfter * 100) -
       (afterOldPosition ? oldDelta : 0) +
       (afterNewPosition ? newDelta : 0);
@@ -91,7 +90,7 @@ export function reconcileTransactionUpdate(
     return adjustedPaise === Math.round(transaction.balanceAfter * 100)
       ? transaction
       : { ...transaction, balanceAfter: adjustedPaise / 100 };
-  });
+  }));
 
   const balanceDelta = newDelta - oldDelta;
   const nextAccountBalancePaise = Math.round(currentAccount.balance * 100) + balanceDelta;
@@ -141,7 +140,7 @@ export function reconcileTransactionRemoval(
   const removedIndexSet = new Set(removedEntries.map(entry => entry.index));
   const totalRemovedDelta = removedDeltas.reduce((sum, entry) => sum + entry.delta, 0);
 
-  const nextTransactions = transactions
+  const nextTransactions = sortTransactionsNewestFirst(transactions
     .map((transaction, index) => ({ transaction, index }))
     .filter(entry => !removedIndexSet.has(entry.index))
     .map(({ transaction, index }) => {
@@ -160,8 +159,7 @@ export function reconcileTransactionRemoval(
 
       const adjustedPaise = Math.round(transaction.balanceAfter * 100) - adjustment;
       return { ...transaction, balanceAfter: adjustedPaise / 100 };
-    })
-    .sort((left, right) => Date.parse(right.date) - Date.parse(left.date));
+    }));
 
   const nextAccountBalancePaise = Math.round(currentAccount.balance * 100) - totalRemovedDelta;
   const nextAccounts = accounts.map(account => account.id === currentAccount.id

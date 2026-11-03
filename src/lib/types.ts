@@ -155,6 +155,7 @@ export interface AppSettings {
 
 export interface TransferDetails {
   payeeId?: string;
+  accountId?: string;
   amount?: number;
   remarks?: string;
   /** Stable local idempotency key retained while a transfer is being verified. */
@@ -169,6 +170,8 @@ export type AppState = {
   isLoggingOut?: boolean;
   user: User;
   accounts: AccountDetails[];
+  /** Persisted account currently selected in account, statement and transfer screens. */
+  activeAccountId?: string;
   transactions: Transaction[];
   payees: Payee[];
   chatHistory: ChatMessage[];
@@ -192,6 +195,7 @@ export type Action =
   | { type: 'LOGOUT_PENDING' }
   | { type: 'LOGOUT_COMPLETE' }
   | { type: 'SET_TRANSFER_DETAILS'; payload: Partial<TransferDetails> }
+  | { type: 'SET_ACTIVE_ACCOUNT'; payload: { accountId: string } }
   | { type: 'CLEAR_TRANSFER' }
   | { type: 'ADD_TRANSACTION'; payload: Omit<Transaction, 'id' | 'accountId'> & Partial<Pick<Transaction, 'id' | 'accountId'>> }
   | { type: 'UPDATE_TRANSACTION'; payload: UpdateTransactionPayload }

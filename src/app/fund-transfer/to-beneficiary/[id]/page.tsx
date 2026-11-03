@@ -23,6 +23,7 @@ import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { formatCurrency } from "@/lib/utils";
 import { RupeeIcon } from "@/components/rupee-icon";
+import { getActiveAccount } from "@/lib/accounts";
 
 export default function TransferToBeneficiaryPage() {
     const { state, dispatch } = useAppContext();
@@ -44,7 +45,7 @@ export default function TransferToBeneficiaryPage() {
     if (!state) return null;
 
     const { accounts, payees, user, settings } = state;
-    const account = accounts[0];
+    const account = getActiveAccount(state);
     const appLogo = settings.appLogo;
     const selectedPayee = payees.find(p => p.id === selectedPayeeId);
     const formattedBalance = formatCurrency(account?.balance ?? 0);
@@ -80,6 +81,7 @@ export default function TransferToBeneficiaryPage() {
             type: 'SET_TRANSFER_DETAILS',
             payload: {
                 payeeId: selectedPayeeId,
+                accountId: account.id,
                 amount: Math.round(transferAmount * 100) / 100,
                 remarks: remarks.trim(),
                 transferId,
@@ -117,6 +119,23 @@ export default function TransferToBeneficiaryPage() {
                     <CardContent className="p-4 space-y-4">
                         <div>
                             <Label className="text-xs text-gray-500">Transfer from</Label>
+                            {accounts.length > 1 && (
+                                <Select
+                                    value={account.id}
+                                    onValueChange={accountId => dispatch({ type: 'SET_ACTIVE_ACCOUNT', payload: { accountId } })}
+                                >
+                                    <SelectTrigger className="mt-1 w-full bg-white">
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {accounts.map(item => (
+                                            <SelectItem key={item.id} value={item.id}>
+                                                {item.type} ••••{item.accountNumber.slice(-4)} · {formatCurrency(item.balance)}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            )}
                             <div className="flex items-center gap-3 p-3 border rounded-md mt-1 bg-white">
                                 <div className="flex items-center justify-center h-10 w-10 rounded-full bg-gray-100 p-1">
                                     <Image src={appLogo} alt="Bank Logo" width={40} height={40} className="rounded-full" />

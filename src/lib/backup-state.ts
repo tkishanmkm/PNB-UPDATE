@@ -1,4 +1,5 @@
 import type { AccountDetails, AppState, CarouselBanner, ChatMessage, IconAssets, Payee, Transaction, TransferDetails } from '@/lib/types';
+import { sortTransactionsNewestFirst } from '@/lib/transaction-order';
 
 type RecordValue = Record<string, unknown>;
 
@@ -189,16 +190,26 @@ const normalizeChatHistory = (value: unknown): ChatMessage[] => {
   return messages;
 };
 
-const normalizeTransfer = (value: unknown): TransferDetails => {
+const normalizeTransfer = (
+  value: unknown,
+  accountIds: Set<string>,
+  payeeIds: Set<string>,
+): TransferDetails => {
   if (value === undefined || value === null) return {};
   if (!isRecord(value)) throw new Error('Backup transfer details are invalid.');
+  const accountId = typeof value.accountId === 'string' && accountIds.has(value.accountId) ? value.accountId : undefined;
+  const payeeId = typeof value.payeeId === 'string' && payeeIds.has(value.payeeId) ? value.payeeId : undefined;
   const amount = value.amount === undefined ? undefined : finiteNumber(value.amount, 'Pending transfer amount');
   if (amount !== undefined && amount < 0) throw new Error('Pending transfer amount cannot be negative.');
   const transferMode = value.transferMode === 'imps' || value.transferMode === 'neft' || value.transferMode === 'rtgs'
     ? value.transferMode
     : undefined;
+  // Do not restore a half-linked pending transfer draft. A user must begin
+  // again when its original account or payee is absent from the backup.
+  if (value.transferId && (!accountId || !payeeId || amount === undefined || !transferMode)) return {};
   return {
-    ...(typeof value.payeeId === 'string' ? { payeeId: value.payeeId } : {}),
+    ...(payeeId ? { payeeId } : {}),
+    ...(accountId ? { accountId } : {}),
     ...(amount !== undefined ? { amount } : {}),
     ...(typeof value.remarks === 'string' ? { remarks: value.remarks } : {}),
     ...(typeof value.transferId === 'string' ? { transferId: value.transferId } : {}),
@@ -230,6 +241,18 @@ export function normalizeAppBackup(
   if (new Set(transactions.map(transaction => transaction.id)).size !== transactions.length) {
     throw new Error('JSON backup contains duplicate transaction IDs.');
   }
+
+  const sortedTransactions = sortTransactionsNewestFirst(transactions);
+  const activeAccountId = typeof value.activeAccountId === 'string' && accountIds.has(value.activeAccountId)
+    ? value.activeAccountId
+    : accounts[0].id;
+  const payees = normalizePayees(value.payees);
+  const chatHistory = normalizeChatHistory(value.chatHistory);
+  const currentTransfer = normalizeTransfer(
+    value.currentTransfer,
+    accountIds,
+    new Set(payees.map(payee => payee.id)),
+  );
 
   const rawUser = value.user;
   const currentMpin = typeof currentCredentials?.mpin === 'string' && /^\d{4}$/.test(currentCredentials.mpin)
@@ -283,10 +306,11 @@ export function normalizeAppBackup(
     isLoggingOut: false,
     user,
     accounts,
-    transactions,
-    payees: normalizePayees(value.payees),
-    chatHistory: normalizeChatHistory(value.chatHistory),
-    currentTransfer: normalizeTransfer(value.currentTransfer),
+    activeAccountId,
+    transactions: sortedTransactions,
+    payees,
+    chatHistory,
+    currentTransfer,
     settings,
     showSplash: typeof value.showSplash === 'boolean' ? value.showSplash : defaults.showSplash,
   };

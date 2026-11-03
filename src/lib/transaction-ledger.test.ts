@@ -36,6 +36,20 @@ describe('transaction ledger reconciliation', () => {
     assert.equal(result.transactions.find(item => item.id === 't2')?.balanceAfter, undefined);
   });
 
+  it('preserves imported source order for equal timestamps when recalculating running anchors', () => {
+    const sameDay: Transaction[] = [
+      { id: 'newest', accountId: 'account-a', date: '2026-02-02T10:00:00.000Z', description: 'Newest credit', amount: 100, type: 'credit', balanceAfter: 900 },
+      { id: 'middle', accountId: 'account-a', date: '2026-02-02T10:00:00.000Z', description: 'Middle debit', amount: -100, type: 'debit', balanceAfter: 800 },
+      { id: 'oldest', accountId: 'account-a', date: '2026-02-02T10:00:00.000Z', description: 'Oldest credit', amount: 900, type: 'credit', balanceAfter: 900 },
+    ];
+    const result = reconcileTransactionUpdate(sameDay, [{ ...account, balance: 900 }], 'middle', { ...sameDay[1], amount: -50 });
+    assert.ok(result);
+    assert.deepEqual(result.transactions.map(item => item.id), ['newest', 'middle', 'oldest']);
+    assert.equal(result.transactions.find(item => item.id === 'newest')?.balanceAfter, 950);
+    assert.equal(result.transactions.find(item => item.id === 'middle')?.balanceAfter, 850);
+    assert.equal(result.transactions.find(item => item.id === 'oldest')?.balanceAfter, 900);
+  });
+
   it('rejects primary ID changes, invalid amounts and missing accounts', () => {
     assert.equal(reconcileTransactionUpdate(history, [account], 't2', { ...history[1], id: 'new-id' }), null);
     assert.equal(reconcileTransactionUpdate(history, [account], 't2', { ...history[1], amount: Number.NaN }), null);

@@ -5,6 +5,8 @@ import type { AppState, Action, Transaction } from '@/lib/types';
 import { defaultState } from '@/lib/mock-data';
 import { getStateFromIndexedDB, saveStateToIndexedDB, clearStateFromIndexedDB } from '@/lib/indexeddb';
 import { reconcileTransactionRemoval, reconcileTransactionUpdate } from '@/lib/transaction-ledger';
+import { resolveAccountId, resolveStatementAccountId } from '@/lib/accounts';
+import { sortTransactionsNewestFirst } from '@/lib/transaction-order';
 
 // Define a new context shape to include appData and setAppData
 const AppContext = createContext<{
@@ -15,8 +17,18 @@ const AppContext = createContext<{
 
 const appReducer = (state: AppState, action: Action): AppState => {
   switch (action.type) {
-    case 'INITIALIZE_STATE':
-      return { ...action.payload, isAuthenticated: false, loginPending: false, isLoggingOut: false, isStateInitialized: true };
+    case 'INITIALIZE_STATE': {
+      const activeAccountId = resolveAccountId(action.payload.accounts || [], action.payload.activeAccountId);
+      return {
+        ...action.payload,
+        activeAccountId,
+        transactions: sortTransactionsNewestFirst(action.payload.transactions || []),
+        isAuthenticated: false,
+        loginPending: false,
+        isLoggingOut: false,
+        isStateInitialized: true,
+      };
+    }
     case 'LOGIN':
       return { ...state, isAuthenticated: true, loginPending: false };
     case 'LOGIN_PENDING':
@@ -27,13 +39,16 @@ const appReducer = (state: AppState, action: Action): AppState => {
       return { ...state, isAuthenticated: false, isLoggingOut: false, loginPending: false };
     case 'SET_TRANSFER_DETAILS':
       return { ...state, currentTransfer: { ...state.currentTransfer, ...action.payload } };
+    case 'SET_ACTIVE_ACCOUNT': {
+      if (!state.accounts.some(account => account.id === action.payload.accountId)) return state;
+      const newState = { ...state, activeAccountId: action.payload.accountId };
+      saveStateToIndexedDB(newState).catch(err => console.error("Failed to persist active account selection", err));
+      return newState;
+    }
     case 'CLEAR_TRANSFER':
       return { ...state, currentTransfer: {} };
     case 'ADD_TRANSACTION': {
-      const requestedAccountId = action.payload.accountId;
-      const accountId = requestedAccountId && state.accounts.some(account => account.id === requestedAccountId)
-        ? requestedAccountId
-        : state.accounts[0]?.id;
+      const accountId = resolveAccountId(state.accounts, action.payload.accountId, state.activeAccountId);
       if (!accountId) return state;
 
       const newTransaction: Transaction = {
@@ -41,11 +56,11 @@ const appReducer = (state: AppState, action: Action): AppState => {
           id: action.payload.id || `txn-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
           accountId,
       };
-      const filteredTransactions = state.transactions.filter(tx => tx.id !== newTransaction.id);
-      
+      if (state.transactions.some(transaction => transaction.id === newTransaction.id)) return state;
+
       const newState = {
         ...state,
-        transactions: [newTransaction, ...filteredTransactions].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()),
+        transactions: sortTransactionsNewestFirst([newTransaction, ...state.transactions]),
       };
       saveStateToIndexedDB(newState).catch(err => console.error("Failed to save state to IndexedDB after adding transaction", err));
       return newState;
@@ -105,19 +120,29 @@ const appReducer = (state: AppState, action: Action): AppState => {
         const newState: AppState = {
             ...state,
             accounts: state.accounts.map(item => item.id === account.id ? { ...item, ...account } : item),
-            transactions: [...transactionsToAdd, ...state.transactions]
-                .sort((left, right) => new Date(right.date).getTime() - new Date(left.date).getTime()),
+            transactions: sortTransactionsNewestFirst([...transactionsToAdd, ...state.transactions]),
         };
         saveStateToIndexedDB(newState).catch(err => console.error("Failed to persist completed transfer", err));
         return newState;
     }
     case 'REPLACE_STATEMENT_DATA': {
         const { account, transactions } = action.payload;
+        const resolvedAccountId = resolveStatementAccountId(state.accounts, account.accountNumber, account.id);
+        const resolvedAccount = { ...account, id: resolvedAccountId };
+        const accountExists = state.accounts.some(item => item.id === resolvedAccountId);
+        const accounts = accountExists
+            ? state.accounts.map(item => item.id === resolvedAccountId ? resolvedAccount : item)
+            : [...state.accounts, resolvedAccount];
+        const accountTransactions = transactions.map(tx => ({ ...tx, accountId: resolvedAccountId }));
         const newState: AppState = {
             ...state,
-            accounts: [account],
-            transactions: transactions.map(tx => ({ ...tx, accountId: account.id })),
-            user: { ...state.user, name: account.accountHolder, accounts: [account] },
+            accounts,
+            activeAccountId: resolvedAccountId,
+            transactions: sortTransactionsNewestFirst([
+                ...state.transactions.filter(tx => tx.accountId !== resolvedAccountId),
+                ...accountTransactions,
+            ]),
+            user: { ...state.user, name: resolvedAccount.accountHolder, accounts },
             // A statement replaces account and ledger data only; unrelated payees
             // and support history remain available after a new statement is imported.
             payees: state.payees,
@@ -128,7 +153,11 @@ const appReducer = (state: AppState, action: Action): AppState => {
         return newState;
     }
     case 'UPDATE_TRANSACTIONS': {
-        const newState = {...state, transactions: action.payload};
+        const ids = new Set(action.payload.map(transaction => transaction.id));
+        if (ids.size !== action.payload.length) return state;
+        const validAccountIds = new Set(state.accounts.map(account => account.id));
+        if (action.payload.some(transaction => !validAccountIds.has(transaction.accountId))) return state;
+        const newState = {...state, transactions: sortTransactionsNewestFirst(action.payload)};
         saveStateToIndexedDB(newState).catch(err => console.error("Failed to save state to IndexedDB after updating transactions", err));
         return newState;
     }
@@ -158,7 +187,15 @@ const appReducer = (state: AppState, action: Action): AppState => {
         return newState;
     }
     case 'SET_STATE_FROM_JSON': {
-        const newState = {...action.payload, isAuthenticated: false, isStateInitialized: true, loginPending: false, isLoggingOut: false };
+        const newState = {
+          ...action.payload,
+          activeAccountId: resolveAccountId(action.payload.accounts, action.payload.activeAccountId),
+          transactions: sortTransactionsNewestFirst(action.payload.transactions || []),
+          isAuthenticated: false,
+          isStateInitialized: true,
+          loginPending: false,
+          isLoggingOut: false,
+        };
         saveStateToIndexedDB(newState).catch(err => console.error("Failed to save imported JSON state to IndexedDB", err));
         return newState;
     }

@@ -45,7 +45,9 @@ const defaults = {
   },
 } as unknown as AppState;
 
-const validBackup = () => ({
+const validBackup = (): AppState => ({
+  activeAccountId: 'account-a',
+  isStateInitialized: true,
   user: {
     id: 'restored-user', name: 'Restored User', email: 'restored@example.com',
     mobileNumber: '9876543210', mpin: '3456', tpin: '7890', avatar: '/restored.png',
@@ -57,9 +59,15 @@ const validBackup = () => ({
   }],
   payees: [{ id: 'payee-1', name: 'Payee', accountNumber: '12340000', bank: 'Bank', ifsc: 'BANK0000001' }],
   chatHistory: [{ id: 'msg-1', sender: 'user', content: 'Hello', timestamp: '2026-11-02T10:00:00.000Z' }],
+  currentTransfer: {},
   settings: {
     appLogo: '/custom-logo.png',
+    loginHelpAvatar: '/help.png',
+    otpAvatar: '/otp.png',
+    agentAvatar: '/agent.png',
     pdfBanner: '/custom-pdf-banner.png',
+    pnbOneLogo: '/pnb-logo.png',
+    pnbBanner: '/pnb-banner.png',
     currencySymbol: '₹',
     iconAssets: { fundTransfer: 'data:image/png;base64,iVBORw0KGgo=' },
     carouselBanners: [{ src: '/custom-banner.png', alt: 'Custom', hint: 'Custom campaign' }],
@@ -73,6 +81,7 @@ describe('full app backup normalization', () => {
   it('restores balances, transaction anchors, payees, chat and visual assets while forcing a fresh login', () => {
     const result = normalizeAppBackup(validBackup(), defaults);
     assert.equal(result.accounts[0].balance, 2250.75);
+    assert.equal(result.activeAccountId, 'account-a');
     assert.equal(result.transactions[0].balanceAfter, 2250.75);
     assert.equal(result.user.name, 'Restored User');
     assert.equal(result.payees.length, 1);
@@ -140,5 +149,45 @@ describe('full app backup normalization', () => {
     backup.transactions[0].accountId = 'unknown-account';
     const result = normalizeAppBackup(backup, defaults);
     assert.equal(result.transactions[0].accountId, result.accounts[0].id);
+  });
+
+  it('preserves the selected account in a multi-account backup and sorts transaction history newest-first', () => {
+    const backup = validBackup();
+    backup.accounts.push(account({ id: 'account-b', accountNumber: '998877665544', balance: 5500 }));
+    backup.activeAccountId = 'account-b';
+    backup.transactions.push({
+      id: 'older', accountId: 'account-b', date: '2026-10-01T10:00:00.000Z',
+      description: 'Older credit', amount: 500, type: 'credit',
+    });
+    backup.transactions.push({
+      id: 'newer', accountId: 'account-b', date: '2026-11-03T10:00:00.000Z',
+      description: 'Newer credit', amount: 250, type: 'credit',
+    });
+    const result = normalizeAppBackup(backup, defaults);
+    assert.equal(result.activeAccountId, 'account-b');
+    assert.equal(result.accounts.length, 2);
+    assert.deepEqual(result.transactions.map(item => item.id), ['newer', 'txn-1', 'older']);
+  });
+
+  it('falls back to the first valid account when the saved active account no longer exists', () => {
+    const backup = validBackup();
+    backup.activeAccountId = 'deleted-account';
+    const result = normalizeAppBackup(backup, defaults);
+    assert.equal(result.activeAccountId, 'account-a');
+  });
+
+  it('retains a pending transfer only when its selected account and payee are present', () => {
+    const backup = validBackup();
+    backup.currentTransfer = {
+      accountId: 'account-a', payeeId: 'payee-1', amount: 125, remarks: 'Test',
+      transferId: 'transfer-a', transferMode: 'imps',
+    };
+    const result = normalizeAppBackup(backup, defaults);
+    assert.equal(result.currentTransfer.accountId, 'account-a');
+    assert.equal(result.currentTransfer.payeeId, 'payee-1');
+
+    backup.currentTransfer = { ...backup.currentTransfer, accountId: 'deleted-account' };
+    const invalidTransfer = normalizeAppBackup(backup, defaults);
+    assert.deepEqual(invalidTransfer.currentTransfer, {});
   });
 });

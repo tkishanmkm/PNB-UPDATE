@@ -22,6 +22,7 @@ import { saveStateToIndexedDB, getStorageEstimate, requestPersistentStorage } fr
 import { defaultState } from '@/lib/mock-data';
 import { createStatementJsonExport, normalizeStatementJson } from '@/lib/statement-json';
 import { normalizeAppBackup } from '@/lib/backup-state';
+import { getActiveAccount } from '@/lib/accounts';
 
 const normalizeImageDataUrls = (value: unknown): unknown => {
     if (typeof value === 'string') {
@@ -48,14 +49,30 @@ const AccountSettings = () => {
     const { state, dispatch } = useAppContext();
     const { toast } = useToast();
     const [user, setUser] = useState(state.user);
-    const [account, setAccount] = useState(state.accounts[0]);
+    const [account, setAccount] = useState(() => getActiveAccount(state));
     const [settings, setSettings] = useState(state.settings);
+
+    useEffect(() => {
+        setAccount(getActiveAccount({
+            accounts: state.accounts,
+            activeAccountId: state.activeAccountId,
+        }));
+    }, [state.activeAccountId, state.accounts]);
+
     const handleSave = () => {
+        if (!account) {
+            toast({ variant: 'destructive', title: 'No account selected', description: 'Add or import an account before editing its details.' });
+            return;
+        }
         dispatch({ type: 'UPDATE_USER', payload: user });
         dispatch({ type: 'UPDATE_ACCOUNT', payload: { ...account, currencySymbol: settings.currencySymbol } });
         dispatch({ type: 'UPDATE_SETTINGS', payload: settings });
         toast({ title: "Success", description: "Account and Security details updated." });
     };
+
+    if (!account) {
+        return <CardContent><p className="text-sm text-muted-foreground">No account is available. Import a valid backup or add an account first.</p></CardContent>;
+    }
 
     return (
         <CardContent className="space-y-4">
@@ -119,6 +136,22 @@ const AccountSettings = () => {
             </div>
              
             <h3 className="font-semibold pt-4">Account Details</h3>
+            <div className="space-y-2">
+                <Label htmlFor="settingsAccountSelect">Edit selected account</Label>
+                <Select
+                    value={account.id}
+                    onValueChange={accountId => dispatch({ type: 'SET_ACTIVE_ACCOUNT', payload: { accountId } })}
+                >
+                    <SelectTrigger id="settingsAccountSelect"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                        {state.accounts.map(item => (
+                            <SelectItem key={item.id} value={item.id}>
+                                {item.type} ••••{item.accountNumber.slice(-4)}
+                            </SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
+            </div>
              <div className="space-y-2">
                 <Label>Account Number</Label>
                 <Input value={account.accountNumber || ''} onChange={e => setAccount({...account, accountNumber: e.target.value})} />
@@ -593,8 +626,10 @@ const EnglishDemoChatBuilder = () => {
     const agents = ['Neha','Suresh','Mahesh','Pinky','Priya','Rahul','Amit','Anjali','Pooja','Rohit','Sneha','Vikram','Ankit','Kavita','Deepak','Nisha','Arjun','Meera','Sanjay','Riya'];
     const generate = () => {
         const now = Date.now();
-        const account = state.accounts[0];
-        const txs = [...state.transactions].sort((a,b)=>new Date(b.date).getTime()-new Date(a.date).getTime());
+        const account = getActiveAccount(state);
+        const txs = [...state.transactions]
+            .filter(transaction => !account || transaction.accountId === account.id)
+            .sort((a,b)=>Date.parse(b.date)-Date.parse(a.date));
         const latest = txs[0];
         const tx = txs.find(t=>t.id===selectedTransactionId) || latest;
         const money = (n:number) => (account?.currencySymbol || state.settings.currencySymbol || 'INR ') + Math.abs(n).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2});
@@ -774,6 +809,7 @@ const DataManagement = () => {
                     // Persist the validated, normalized full app state before reporting success.
                     await saveStateToIndexedDB(importedState);
                     dispatch({ type: 'SET_STATE_FROM_JSON', payload: importedState });
+                    if (fileInputRef.current) fileInputRef.current.value = '';
                     toast({
                         title: "Backup imported",
                         description: `Restored ${importedState.accounts.length} account(s), ${importedState.transactions.length} transaction(s), and app settings. Sign in again to continue.`,
@@ -1045,7 +1081,7 @@ const PdfExtraction = () => {
             toast({ variant: 'destructive', title: 'Account number not found', description: 'The statement must contain an identifiable account number before replacing app data.' });
             return;
         }
-        const template = state.accounts.find(item => normalizeAccountNumber(item.accountNumber) === accountNumber) || state.accounts[0];
+        const template = state.accounts.find(item => normalizeAccountNumber(item.accountNumber) === accountNumber) || getActiveAccount(state);
         if (!template) {
             toast({ variant: 'destructive', title: 'Cannot save statement', description: 'The app account template is missing.' });
             return;

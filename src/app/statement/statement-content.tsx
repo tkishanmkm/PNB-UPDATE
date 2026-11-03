@@ -15,6 +15,7 @@ import { formatCurrency } from "@/lib/utils";
 import { RupeeIcon } from "@/components/rupee-icon";
 import { calculateStatementBalances } from "@/lib/statement-balance";
 import { toast } from "@/hooks/use-toast";
+import { getActiveAccount } from "@/lib/accounts";
 
 const TransactionRow = ({ transaction }: { transaction: Transaction & { balance: number } }) => {
     const isDebit = transaction.type === 'debit';
@@ -51,6 +52,13 @@ export function StatementContent() {
 
     const from = searchParams.get('from');
     const to = searchParams.get('to');
+    const requestedAccountId = searchParams.get('accountId');
+    const account = useMemo(() => requestedAccountId
+        ? state.accounts.find(item => item.id === requestedAccountId)
+        : getActiveAccount({
+            accounts: state.accounts,
+            activeAccountId: state.activeAccountId,
+        }), [state.accounts, state.activeAccountId, requestedAccountId]);
     const parsedFrom = useMemo(() => from ? parseISO(from) : undefined, [from]);
     const parsedTo = useMemo(() => to ? parseISO(to) : undefined, [to]);
     const isValidPeriod = Boolean(
@@ -60,13 +68,12 @@ export function StatementContent() {
     );
 
     const transactionsWithBalance = useMemo(() => {
-        if (!state || !isValidPeriod || !parsedFrom || !parsedTo || !state.accounts?.[0]) return [];
+        if (!isValidPeriod || !parsedFrom || !parsedTo || !account) return [];
         const fromDate = startOfDay(parsedFrom);
         const toDate = new Date(parsedTo);
         toDate.setHours(23, 59, 59, 999);
-        const account = state.accounts[0];
         return calculateStatementBalances(state.transactions, account.id, account.balance, fromDate, toDate);
-    }, [state, parsedFrom, parsedTo, isValidPeriod]);
+    }, [state.transactions, parsedFrom, parsedTo, isValidPeriod, account]);
     
     const handleDownloadPdf = async () => {
         if (!state) return;
@@ -74,8 +81,8 @@ export function StatementContent() {
             toast({ variant: 'destructive', title: 'Invalid date range', description: 'Select a valid statement start and end date.' });
             return;
         }
-        if (!state.accounts?.[0]) {
-            toast({ variant: 'destructive', title: 'No account found', description: 'Add or import an account before generating a statement.' });
+        if (!account) {
+            toast({ variant: 'destructive', title: 'No account found', description: 'The selected account is no longer available. Select an account and try again.' });
             return;
         }
         setIsGeneratingPdf(true);
@@ -83,14 +90,14 @@ export function StatementContent() {
 
         try {
             const pdfDataUri = await StatementPDF.generatePdfDataUri({
-                account: state.accounts[0],
+                account,
                 transactions: transactionsWithBalance,
                 period: { from: parsedFrom, to: parsedTo },
                 banner: state.settings.pdfBanner,
                 lastPagePdfDataUri: state.settings.lastPagePdfDataUri,
             });
             
-            const accountDigits = String(state.accounts[0].accountNumber || '').replace(/\D/g, '');
+            const accountDigits = String(account.accountNumber || '').replace(/\D/g, '');
             const lastFour = accountDigits.slice(-4).padStart(4, '0');
             const downloadDate = format(new Date(), 'ddMMyyyy');
             const filename = 'PNBONE_STMT_XX' + lastFour + '_' + downloadDate + '.pdf';
@@ -136,7 +143,7 @@ export function StatementContent() {
     
     
     if (!state) return null; // Or a loading state
-    if (!state.accounts?.[0]) return <div className="p-4 text-center">No account is available. Import a valid app backup or add an account before generating a statement.</div>;
+    if (!account) return <div className="p-4 text-center">The selected account is unavailable. Return to Account Statement and choose an available account.</div>;
     if (!isValidPeriod) return <div className="p-4 text-center">Invalid date range provided. Return to Account Statement and select valid dates.</div>
 
     return (
@@ -175,7 +182,7 @@ export function StatementContent() {
                         <FileDown className="h-6 w-6" />
                         <span>{isGeneratingPdf ? 'Generating...' : 'Download PDF'}</span>
                     </Button>
-                     <Link href={`/statement/analysis?from=${encodeURIComponent(from || '')}&to=${encodeURIComponent(to || '')}`} className="flex h-full flex-1">
+                     <Link href={`/statement/analysis?from=${encodeURIComponent(from || '')}&to=${encodeURIComponent(to || '')}&accountId=${encodeURIComponent(account.id)}`} className="flex h-full flex-1">
                         <Button variant="ghost" className="flex h-full w-full flex-col items-center text-white">
                             <LineChart className="h-6 w-6" />
                             <span>Analysis</span>

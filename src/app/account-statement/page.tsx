@@ -14,19 +14,22 @@ import { useAppContext } from "@/hooks/use-app-store";
 import { ArrowLeft, Home, Calendar as CalendarIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { getActiveAccount } from "@/lib/accounts";
 
 export default function AccountStatementPage() {
   const router = useRouter();
-  const { state } = useAppContext();
+  const { state, dispatch } = useAppContext();
   const { toast } = useToast();
   const [searchType, setSearchType] = useState("quick");
   const [quickPeriod, setQuickPeriod] = useState("week");
   const [fromDate, setFromDate] = useState<Date | undefined>();
   const [toDate, setToDate] = useState<Date | undefined>();
 
-  const account = state.accounts[0];
+  const account = getActiveAccount(state);
 
   const handleSearch = () => {
+    if (!account) return;
     let from, to;
     
     if (searchType === 'quick') {
@@ -59,7 +62,7 @@ export default function AccountStatementPage() {
     }
 
     if (from && to) {
-        router.push(`/statement?from=${from}&to=${to}`);
+        router.push(`/statement?from=${from}&to=${to}&accountId=${encodeURIComponent(account.id)}`);
     }
   };
 
@@ -83,11 +86,23 @@ export default function AccountStatementPage() {
 
       <main className="flex-1 p-4 space-y-6">
         <div>
-            <Label className="text-xs text-gray-500">Select account</Label>
-             <div className="bg-white p-3 rounded-lg border mt-1">
-                <p className="font-semibold text-sm">{account.accountNumber}</p>
-                <p className="text-xs text-muted-foreground">{account.type} Account</p>
-            </div>
+            <Label htmlFor="statementAccountSelect" className="text-xs text-gray-500">Select account</Label>
+            <Select
+                value={account.id}
+                onValueChange={accountId => dispatch({ type: 'SET_ACTIVE_ACCOUNT', payload: { accountId } })}
+            >
+                <SelectTrigger id="statementAccountSelect" className="mt-1 h-auto min-h-14 bg-white py-3">
+                    <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                    {state.accounts.map(item => (
+                        <SelectItem key={item.id} value={item.id}>
+                            {item.type} ••••{item.accountNumber.slice(-4)}
+                        </SelectItem>
+                    ))}
+                </SelectContent>
+            </Select>
+            <p className="mt-1 text-xs text-muted-foreground">The statement will include only this selected account.</p>
         </div>
 
         <div className="space-y-4">

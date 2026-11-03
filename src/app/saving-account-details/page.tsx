@@ -20,6 +20,7 @@ import type { Transaction } from "@/lib/types";
 import { formatCurrency } from "@/lib/utils";
 import { RupeeIcon } from "@/components/rupee-icon";
 import { calculateAverageQuarterlyBalance, getQuarterOptions } from "@/lib/quarterly-balance";
+import { getActiveAccount } from "@/lib/accounts";
 
 const BalanceDetailRow = ({ label, value }: { label: string; value: number }) => (
     <div className="flex items-center justify-between gap-3 py-1">
@@ -61,7 +62,7 @@ export default function SavingAccountDetailsPage() {
 
     if (!state) return null;
 
-    const account = state.accounts[0];
+    const account = getActiveAccount(state);
     if (!account) {
         return (
             <div className="pnb-page flex min-h-screen flex-col items-center justify-center gap-3 p-6 text-center">

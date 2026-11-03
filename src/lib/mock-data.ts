@@ -120,6 +120,7 @@ export const defaultState: AppState = {
       status: 'Active',
     },
   ],
+  activeAccountId: 'acc-001',
   transactions,
   payees: [
     { id: 'payee1', name: 'Jane Smith', accountNumber: '50100123456789', bank: 'HDFC Bank', ifsc: 'HDFC0001234', nickname: 'Jane' },

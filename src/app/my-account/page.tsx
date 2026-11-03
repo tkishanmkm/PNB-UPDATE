@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 import { useAppContext } from '@/hooks/use-app-store';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ArrowLeft, Home, UserCircle, Landmark } from 'lucide-react';
+import { getActiveAccount } from '@/lib/accounts';
 
 const DetailRow = ({ label, value }: { label: string; value: string | undefined }) => (
     <div className="flex items-start justify-between gap-4 py-3">
@@ -34,8 +35,8 @@ const maskMobile = (mobile: string) => {
 export default function MyAccountPage() {
     const router = useRouter();
     const { state } = useAppContext();
-    const { user, accounts } = state;
-    const account = accounts[0];
+    const { user } = state;
+    const account = getActiveAccount(state);
 
     if (!account) {
         return (

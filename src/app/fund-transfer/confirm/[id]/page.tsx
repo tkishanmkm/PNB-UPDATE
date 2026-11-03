@@ -15,6 +15,7 @@ import { cn, formatCurrency } from '@/lib/utils';
 import { RupeeIcon } from '@/components/rupee-icon';
 
 import { amountToIndianWords } from '@/lib/amount-to-words';
+import { getActiveAccount } from '@/lib/accounts';
 
 type Step = 'summary' | 'tpin';
 
@@ -34,7 +35,9 @@ function ConfirmTransferPage() {
   const payeeId = params.id as string;
   const { currentTransfer, settings } = state;
   const payee = state.payees.find(p => p.id === payeeId);
-  const account = state.accounts[0];
+  const account = currentTransfer.accountId
+    ? state.accounts.find(item => item.id === currentTransfer.accountId)
+    : getActiveAccount(state);
   const appLogo = settings.appLogo;
 
   const [step, setStep] = useState<Step>('summary');
@@ -51,7 +54,7 @@ function ConfirmTransferPage() {
     if (!payee || !account || !currentTransfer.amount || !currentTransfer.transferId) {
         router.replace('/fund-transfer');
     }
-  }, [payee, account, currentTransfer.amount, currentTransfer.transferId, router]);
+  }, [payee, account, currentTransfer.amount, currentTransfer.transferId, currentTransfer.accountId, router]);
 
 
   if (!payee || !account || !currentTransfer.amount || !currentTransfer.transferId) {

@@ -10,12 +10,14 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertTriangle, ArrowLeft, Home, Lightbulb, LineChart } from 'lucide-react';
 import { format, isValid, parseISO } from 'date-fns';
 import { analyzeStatementLocally, type LocalStatementAnalysis } from '@/lib/statement-analysis';
+import { getActiveAccount } from '@/lib/accounts';
 
 function AnalysisDisplay() {
   const searchParams = useSearchParams();
   const { state } = useAppContext();
   const from = searchParams.get('from');
   const to = searchParams.get('to');
+  const requestedAccountId = searchParams.get('accountId');
 
   const [analysis, setAnalysis] = useState<LocalStatementAnalysis | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -45,7 +47,12 @@ function AnalysisDisplay() {
       return;
     }
 
-    const account = state.accounts?.[0];
+    const account = requestedAccountId
+      ? state.accounts.find(item => item.id === requestedAccountId)
+      : getActiveAccount({
+          accounts: state.accounts,
+          activeAccountId: state.activeAccountId,
+        });
     if (!account?.id) {
       setError('No account is available to analyse. Import an account statement or restore a valid backup.');
       setIsLoading(false);
@@ -62,7 +69,7 @@ function AnalysisDisplay() {
     } finally {
       setIsLoading(false);
     }
-  }, [from, to, state.isStateInitialized, state.accounts, state.transactions]);
+  }, [from, to, requestedAccountId, state.isStateInitialized, state.accounts, state.activeAccountId, state.transactions]);
 
   if (isLoading) {
     return (
