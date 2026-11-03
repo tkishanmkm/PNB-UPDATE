@@ -101,3 +101,72 @@ export function reconcileTransactionUpdate(
 
   return { transactions: adjustedTransactions, accounts: nextAccounts };
 }
+
+export function reconcileTransactionRemoval(
+  transactions: Transaction[],
+  accounts: AccountDetails[],
+  transactionId: string,
+): TransactionLedgerUpdate | null {
+  const originalIndex = transactions.findIndex(transaction => transaction.id === transactionId);
+  if (originalIndex < 0) return null;
+
+  const original = transactions[originalIndex];
+  const currentAccount = accounts.find(account => account.id === original.accountId);
+  if (!currentAccount || !Number.isFinite(currentAccount.balance)) return null;
+
+  const removedEntries = [{ transaction: original, index: originalIndex }];
+  // A completed transfer and its separate bank-charge row form one receipt.
+  // Removing the debit also removes its matching charge so the ledger and
+  // receipt cannot retain a charge without the underlying transfer.
+  if (original.category === 'Transfer') {
+    const chargeIndex = transactions.findIndex(transaction =>
+      transaction.id === transactionId + '-CHG' &&
+      transaction.accountId === original.accountId &&
+      transaction.category === 'Bank Charges',
+    );
+    if (chargeIndex >= 0) {
+      removedEntries.push({ transaction: transactions[chargeIndex], index: chargeIndex });
+    }
+  }
+
+  const removedDeltas = removedEntries.map(entry => ({
+    ...entry,
+    time: Date.parse(entry.transaction.date),
+    delta: signedAmountPaise(entry.transaction),
+  }));
+  if (removedDeltas.some(entry => !Number.isFinite(entry.time) || !Number.isFinite(entry.transaction.amount))) {
+    return null;
+  }
+
+  const removedIndexSet = new Set(removedEntries.map(entry => entry.index));
+  const totalRemovedDelta = removedDeltas.reduce((sum, entry) => sum + entry.delta, 0);
+
+  const nextTransactions = transactions
+    .map((transaction, index) => ({ transaction, index }))
+    .filter(entry => !removedIndexSet.has(entry.index))
+    .map(({ transaction, index }) => {
+      if (transaction.accountId !== original.accountId ||
+          typeof transaction.balanceAfter !== 'number' ||
+          !Number.isFinite(transaction.balanceAfter)) return transaction;
+
+      const transactionTime = Date.parse(transaction.date);
+      if (!Number.isFinite(transactionTime)) return transaction;
+      const adjustment = removedDeltas.reduce((sum, removed) =>
+        compareChronologically(transactionTime, index, removed.time, removed.index) > 0
+          ? sum + removed.delta
+          : sum,
+      0);
+      if (adjustment === 0) return transaction;
+
+      const adjustedPaise = Math.round(transaction.balanceAfter * 100) - adjustment;
+      return { ...transaction, balanceAfter: adjustedPaise / 100 };
+    })
+    .sort((left, right) => Date.parse(right.date) - Date.parse(left.date));
+
+  const nextAccountBalancePaise = Math.round(currentAccount.balance * 100) - totalRemovedDelta;
+  const nextAccounts = accounts.map(account => account.id === currentAccount.id
+    ? { ...account, balance: nextAccountBalancePaise / 100 }
+    : account);
+
+  return { transactions: nextTransactions, accounts: nextAccounts };
+}

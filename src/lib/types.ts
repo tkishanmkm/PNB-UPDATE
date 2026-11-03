@@ -195,6 +195,7 @@ export type Action =
   | { type: 'CLEAR_TRANSFER' }
   | { type: 'ADD_TRANSACTION'; payload: Omit<Transaction, 'id' | 'accountId'> & Partial<Pick<Transaction, 'id' | 'accountId'>> }
   | { type: 'UPDATE_TRANSACTION'; payload: UpdateTransactionPayload }
+  | { type: 'DELETE_TRANSACTION'; payload: { id: string } }
   | { type: 'UPDATE_USER'; payload: Partial<User> }
   | { type: 'UPDATE_ACCOUNT'; payload: AccountDetails }
   | { type: 'COMPLETE_TRANSFER'; payload: { account: AccountDetails; debit: Transaction; charge?: Transaction } }

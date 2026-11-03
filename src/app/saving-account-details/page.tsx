@@ -19,6 +19,7 @@ import { format } from "date-fns";
 import type { Transaction } from "@/lib/types";
 import { formatCurrency } from "@/lib/utils";
 import { RupeeIcon } from "@/components/rupee-icon";
+import { calculateAverageQuarterlyBalance, getQuarterOptions } from "@/lib/quarterly-balance";
 
 const BalanceDetailRow = ({ label, value }: { label: string; value: number }) => (
     <div className="flex items-center justify-between gap-3 py-1">
@@ -55,7 +56,8 @@ export default function SavingAccountDetailsPage() {
     const { state } = useAppContext();
     const router = useRouter();
     const [isDetailsVisible, setIsDetailsVisible] = useState(false);
-    const [selectedQuarter, setSelectedQuarter] = useState("2026-Q3");
+    const quarterOptions = getQuarterOptions();
+    const [selectedQuarter, setSelectedQuarter] = useState(() => quarterOptions[0]?.value || '2026-Q1');
 
     if (!state) return null;
 
@@ -74,31 +76,12 @@ export default function SavingAccountDetailsPage() {
     const firstName = accountHolderParts[0];
     const lastName = accountHolderParts.slice(1).join(" ");
     
-    const automaticQuarterBalance = (() => {
-        const [yearText, quarterText] = selectedQuarter.split("-Q");
-        const year = Number(yearText);
-        const quarter = Number(quarterText);
-        const start = new Date(year, (quarter - 1) * 3, 1);
-        const end = new Date(year, quarter * 3, 0);
-        const dayCount = Math.floor((end.getTime() - start.getTime()) / 86400000) + 1;
-        const accountTransactions = transactions
-            .filter(tx => tx.accountId === account.id && Number.isFinite(new Date(tx.date).getTime()))
-            .map(tx => ({ ...tx, day: new Date(tx.date).getFullYear() + "-" + String(new Date(tx.date).getMonth() + 1).padStart(2, "0") + "-" + String(new Date(tx.date).getDate()).padStart(2, "0") }))
-            .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-        if (accountTransactions.length === 0) return account.balance;
-        const startKey = start.getFullYear() + "-" + String(start.getMonth() + 1).padStart(2, "0") + "-" + String(start.getDate()).padStart(2, "0");
-        // Reverse transactions from the quarter start onward to infer its opening balance,
-        // then replay them day-by-day to calculate a daily-weighted average.
-        const signedAmount = (tx: typeof accountTransactions[number]) => tx.type === "credit" ? Math.abs(tx.amount) : -Math.abs(tx.amount);
-        let balance = account.balance - accountTransactions.filter(tx => tx.day >= startKey).reduce((sum, tx) => sum + signedAmount(tx), 0);
-        let weightedTotal = 0;
-        for (let cursor = new Date(start); cursor <= end; cursor.setDate(cursor.getDate() + 1)) {
-            const dayKey = cursor.getFullYear() + "-" + String(cursor.getMonth() + 1).padStart(2, "0") + "-" + String(cursor.getDate()).padStart(2, "0");
-            for (const tx of accountTransactions) if (tx.day === dayKey) balance += signedAmount(tx);
-            weightedTotal += balance;
-        }
-        return Math.round((weightedTotal / dayCount) * 100) / 100;
-    })();
+    const automaticQuarterBalance = calculateAverageQuarterlyBalance(
+        transactions,
+        account.id,
+        account.balance,
+        selectedQuarter,
+    );
     const averageQuarterlyBalance = account.averageQuarterlyBalance !== undefined && account.averageQuarterlyBalance !== null
         ? account.averageQuarterlyBalance
         : automaticQuarterBalance;
@@ -168,14 +151,9 @@ export default function SavingAccountDetailsPage() {
                                 <SelectValue placeholder="Select Quarter" />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="2026-Q4">Q4 (Oct-Dec) 2026</SelectItem>
-                                <SelectItem value="2026-Q3">Q3 (Jul-Sep) 2026</SelectItem>
-                                <SelectItem value="2026-Q2">Q2 (Apr-Jun) 2026</SelectItem>
-                                <SelectItem value="2026-Q1">Q1 (Jan-Mar) 2026</SelectItem>
-                                <SelectItem value="2025-Q4">Q4 (Oct-Dec) 2025</SelectItem>
-                                <SelectItem value="2025-Q3">Q3 (Jul-Sep) 2025</SelectItem>
-                                <SelectItem value="2025-Q2">Q2 (Apr-Jun) 2025</SelectItem>
-                                <SelectItem value="2025-Q1">Q1 (Jan-Mar) 2025</SelectItem>
+                                {quarterOptions.map(option => (
+                                    <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
+                                ))}
                             </SelectContent>
                         </Select>
                     </div>

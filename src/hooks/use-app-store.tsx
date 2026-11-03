@@ -4,7 +4,7 @@ import React, { createContext, useReducer, useContext, useEffect } from 'react';
 import type { AppState, Action, Transaction } from '@/lib/types';
 import { defaultState } from '@/lib/mock-data';
 import { getStateFromIndexedDB, saveStateToIndexedDB, clearStateFromIndexedDB } from '@/lib/indexeddb';
-import { reconcileTransactionUpdate } from '@/lib/transaction-ledger';
+import { reconcileTransactionRemoval, reconcileTransactionUpdate } from '@/lib/transaction-ledger';
 
 // Define a new context shape to include appData and setAppData
 const AppContext = createContext<{
@@ -56,6 +56,13 @@ const appReducer = (state: AppState, action: Action): AppState => {
         if (!reconciled) return state;
         const newState = { ...state, ...reconciled };
         saveStateToIndexedDB(newState).catch(err => console.error("Failed to save reconciled transaction ledger to IndexedDB", err));
+        return newState;
+    }
+    case 'DELETE_TRANSACTION': {
+        const reconciled = reconcileTransactionRemoval(state.transactions, state.accounts, action.payload.id);
+        if (!reconciled) return state;
+        const newState = { ...state, ...reconciled };
+        saveStateToIndexedDB(newState).catch(err => console.error("Failed to save reconciled ledger after transaction deletion", err));
         return newState;
     }
     case 'UPDATE_USER': {

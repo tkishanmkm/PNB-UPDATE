@@ -1,7 +1,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import type { AccountDetails, Transaction } from './types';
-import { reconcileTransactionUpdate } from './transaction-ledger';
+import { reconcileTransactionRemoval, reconcileTransactionUpdate } from './transaction-ledger';
 
 const account: AccountDetails = {
   id: 'account-a', userId: 'user-a', accountNumber: '1234567890', type: 'Savings',
@@ -40,5 +40,45 @@ describe('transaction ledger reconciliation', () => {
     assert.equal(reconcileTransactionUpdate(history, [account], 't2', { ...history[1], id: 'new-id' }), null);
     assert.equal(reconcileTransactionUpdate(history, [account], 't2', { ...history[1], amount: Number.NaN }), null);
     assert.equal(reconcileTransactionUpdate(history, [], 't2', history[1]), null);
+  });
+
+  it('reconciles account and later running balances when a debit is deleted', () => {
+    const result = reconcileTransactionRemoval(history, [account], 't2');
+    assert.ok(result);
+    assert.equal(result.transactions.length, 2);
+    assert.equal(result.accounts[0].balance, 1000);
+    assert.equal(result.transactions.find(item => item.id === 't3')?.balanceAfter, 1000);
+    assert.equal(result.transactions.find(item => item.id === 't1')?.balanceAfter, 900);
+  });
+
+  it('does not affect transactions belonging to other accounts', () => {
+    const other: Transaction = {
+      id: 'other', accountId: 'account-b', date: '2026-02-04T10:00:00.000Z',
+      description: 'Other account', amount: -50, type: 'debit', balanceAfter: 50,
+    };
+    const result = reconcileTransactionRemoval([...history, other], [account], 't2');
+    assert.ok(result);
+    assert.equal(result.transactions.find(item => item.id === 'other')?.balanceAfter, 50);
+  });
+
+  it('removes a matching bank-charge row when its completed transfer is deleted', () => {
+    const transferRows: Transaction[] = [
+      { id: 'later', accountId: 'account-a', date: '2026-02-04T10:00:00.000Z', description: 'Later credit', amount: 10, type: 'credit', balanceAfter: 905 },
+      { id: 'transfer-1', accountId: 'account-a', date: '2026-02-03T10:00:00.000Z', description: 'IMPS-IN/transfer-1', amount: -100, type: 'debit', category: 'Transfer', balanceAfter: 900, payeeId: 'payee-1' },
+      { id: 'transfer-1-CHG', accountId: 'account-a', date: '2026-02-03T10:00:00.000Z', description: 'IMPS bank charge', amount: -5, type: 'debit', category: 'Bank Charges', balanceAfter: 895 },
+      { id: 'opening', accountId: 'account-a', date: '2026-02-02T10:00:00.000Z', description: 'Opening credit', amount: 1000, type: 'credit', balanceAfter: 1000 },
+    ];
+    const result = reconcileTransactionRemoval(transferRows, [{ ...account, balance: 905 }], 'transfer-1');
+    assert.ok(result);
+    assert.equal(result.transactions.some(item => item.id === 'transfer-1'), false);
+    assert.equal(result.transactions.some(item => item.id === 'transfer-1-CHG'), false);
+    assert.equal(result.accounts[0].balance, 1010);
+    assert.equal(result.transactions.find(item => item.id === 'later')?.balanceAfter, 1010);
+    assert.equal(result.transactions.find(item => item.id === 'opening')?.balanceAfter, 1000);
+  });
+
+  it('rejects unknown or unlinked transaction deletions', () => {
+    assert.equal(reconcileTransactionRemoval(history, [account], 'missing'), null);
+    assert.equal(reconcileTransactionRemoval(history, [], 't2'), null);
   });
 });

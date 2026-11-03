@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import type { Payee, Transaction, CarouselBanner, AppSettings, IconAssets, ChatMessage, AccountDetails, AppState } from '@/lib/types';
+import type { Payee, Transaction, CarouselBanner, AppSettings, IconAssets, ChatMessage, AccountDetails } from '@/lib/types';
 import { extractStatementDetailsFromPdf, extractTransactionsFromPdf, type ExtractedStatementDetails } from '@/ai/flows/extract-transactions-from-pdf';
 import { Trash2, Edit, ArrowLeft, Home } from 'lucide-react';
 import Link from 'next/link';
@@ -21,6 +21,7 @@ import { Suspense } from 'react';
 import { saveStateToIndexedDB, getStorageEstimate, requestPersistentStorage } from '@/lib/indexeddb';
 import { defaultState } from '@/lib/mock-data';
 import { createStatementJsonExport, normalizeStatementJson } from '@/lib/statement-json';
+import { normalizeAppBackup } from '@/lib/backup-state';
 
 const normalizeImageDataUrls = (value: unknown): unknown => {
     if (typeof value === 'string') {
@@ -163,8 +164,26 @@ const AccountSettings = () => {
                 <Input type="number" value={account.balance || 0} onChange={e => setAccount({...account, balance: parseFloat(e.target.value) || 0})} />
             </div>
             <div className="space-y-2">
-                <Label>Average Quarterly Balance</Label>
-                <Input type="number" value={account.averageQuarterlyBalance || 0} onChange={e => setAccount({...account, averageQuarterlyBalance: parseFloat(e.target.value) || 0})} />
+                <Label>Average Quarterly Balance (Optional Override)</Label>
+                <Input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={account.averageQuarterlyBalance ?? ''}
+                    placeholder="Automatically calculate"
+                    onChange={e => {
+                        const raw = e.target.value;
+                        if (raw === '') {
+                            setAccount({ ...account, averageQuarterlyBalance: undefined });
+                            return;
+                        }
+                        const value = Number(raw);
+                        if (Number.isFinite(value) && value >= 0) {
+                            setAccount({ ...account, averageQuarterlyBalance: value });
+                        }
+                    }}
+                />
+                <p className="text-xs text-muted-foreground">Leave blank to calculate the daily average from this account’s saved transactions.</p>
             </div>
              <div className="space-y-2">
                 <Label>Customer Address</Label>
@@ -217,9 +236,18 @@ const TransactionSettings = () => {
     const { toast } = useToast();
     
     const handleDelete = (id: string) => {
-        const currentTransactions = state.transactions;
-        const updatedTransactions = currentTransactions.filter(tx => tx.id !== id);
-        dispatch({type: 'UPDATE_TRANSACTIONS', payload: updatedTransactions});
+        const transaction = state.transactions.find(item => item.id === id);
+        if (!transaction) {
+            toast({ variant: 'destructive', title: 'Transaction not found', description: 'The transaction may already have been deleted.' });
+            return;
+        }
+        dispatch({ type: 'DELETE_TRANSACTION', payload: { id } });
+        toast({
+            title: 'Transaction deleted',
+            description: transaction.category === 'Transfer'
+                ? 'The linked bank charge was also removed where present, and account/running balances were reconciled.'
+                : 'The account closing balance and later running balances were reconciled.',
+        });
     }
 
     const handleEdit = (id: string) => {
@@ -723,6 +751,11 @@ const DataManagement = () => {
     const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (file) {
+            if (file.size > 50 * 1024 * 1024) {
+                toast({ variant: 'destructive', title: "Backup is too large", description: "Choose a JSON backup smaller than 50 MB." });
+                e.target.value = '';
+                return;
+            }
             const reader = new FileReader();
             reader.onload = async (event) => {
                 try {
@@ -733,118 +766,17 @@ const DataManagement = () => {
                     }
 
                     const normalizedParsedState = normalizeImageDataUrls(parsedState);
-                    const source = normalizedParsedState as Partial<AppState> & {
-                        carouselBanners?: CarouselBanner[];
-                    };
-                    if (!source.user || typeof source.user !== 'object') {
-                        throw new Error("JSON backup is missing user details.");
-                    }
-                    if (!Array.isArray(source.accounts) || source.accounts.length === 0) {
-                        throw new Error("JSON backup must contain at least one account.");
-                    }
-                    if (!Array.isArray(source.transactions)) {
-                        throw new Error("JSON backup must contain a transactions array.");
-                    }
-
-                    const accounts = source.accounts.map((account, index) => {
-                        if (!account || typeof account !== 'object') {
-                            throw new Error(`Account ${index + 1} is invalid.`);
-                        }
-                        return {
-                            ...account,
-                            id: typeof account.id === 'string' && account.id.trim()
-                                ? account.id
-                                : `imported-account-${index + 1}`,
-                            currencySymbol: account.currencySymbol || source.settings?.currencySymbol || defaultState.settings.currencySymbol,
-                        };
+                    const importedState = normalizeAppBackup(normalizedParsedState, defaultState, {
+                        mpin: state.user.mpin,
+                        tpin: state.user.tpin,
                     });
-                    const accountIds = new Set(accounts.map(account => account.id));
-                    if (accountIds.size !== accounts.length) {
-                        throw new Error('JSON backup contains duplicate account IDs.');
-                    }
-                    const fallbackAccountId = accounts[0].id;
-
-                    const transactions = source.transactions.map((transaction, index) => {
-                        if (!transaction || typeof transaction !== 'object') {
-                            throw new Error(`Transaction ${index + 1} is invalid.`);
-                        }
-                        const amount = Number(transaction.amount);
-                        if (!Number.isFinite(amount)) {
-                            throw new Error(`Transaction ${index + 1} has an invalid amount.`);
-                        }
-                        if (!transaction.date || !Number.isFinite(Date.parse(transaction.date))) {
-                            throw new Error(`Transaction ${index + 1} has an invalid date.`);
-                        }
-                        if (typeof transaction.description !== 'string') {
-                            throw new Error(`Transaction ${index + 1} is missing its description.`);
-                        }
-                        const type = transaction.type === 'credit' || transaction.type === 'debit'
-                            ? transaction.type
-                            : amount < 0 ? 'debit' : 'credit';
-                        return {
-                            ...transaction,
-                            id: typeof transaction.id === 'string' && transaction.id.trim()
-                                ? transaction.id
-                                : `imported-transaction-${index + 1}`,
-                            accountId: transaction.accountId && accountIds.has(transaction.accountId)
-                                ? transaction.accountId
-                                : fallbackAccountId,
-                            amount: type === 'debit' ? -Math.abs(amount) : Math.abs(amount),
-                            type,
-                        };
-                    });
-
-                    const transactionIds = new Set(transactions.map(transaction => transaction.id));
-                    if (transactionIds.size !== transactions.length) {
-                        throw new Error('JSON backup contains duplicate transaction IDs.');
-                    }
-
-                    const importedState: AppState = {
-                        ...defaultState,
-                        ...source,
-                        isAuthenticated: false,
-                        isStateInitialized: true,
-                        loginPending: false,
-                        isLoggingOut: false,
-                        // Restore valid demo PINs from this backup; otherwise preserve the configured PINs on this device.
-                        user: {
-                            ...defaultState.user,
-                            ...source.user,
-                            mpin: typeof source.user.mpin === 'string' && /^\d{4}$/.test(source.user.mpin)
-                                ? source.user.mpin
-                                : (/^\d{4}$/.test(state.user.mpin || '') ? state.user.mpin : defaultState.user.mpin),
-                            tpin: typeof source.user.tpin === 'string' && /^\d{4}$/.test(source.user.tpin)
-                                ? source.user.tpin
-                                : (/^\d{4}$/.test(state.user.tpin || '') ? state.user.tpin : defaultState.user.tpin),
-                        },
-                        accounts,
-                        transactions,
-                        payees: Array.isArray(source.payees) ? source.payees : [],
-                        chatHistory: Array.isArray(source.chatHistory) ? source.chatHistory : [],
-                        currentTransfer: source.currentTransfer && typeof source.currentTransfer === 'object'
-                            ? source.currentTransfer
-                            : {},
-                        settings: {
-                            ...defaultState.settings,
-                            ...(source.settings || {}),
-                            iconAssets: {
-                                ...defaultState.settings.iconAssets,
-                                ...(source.settings?.iconAssets || {}),
-                            },
-                            carouselBanners: Array.isArray(source.settings?.carouselBanners)
-                                ? source.settings.carouselBanners
-                                : Array.isArray(source.carouselBanners)
-                                    ? source.carouselBanners
-                                    : defaultState.settings.carouselBanners,
-                        },
-                    };
 
                     // Persist the validated, normalized full app state before reporting success.
                     await saveStateToIndexedDB(importedState);
                     dispatch({ type: 'SET_STATE_FROM_JSON', payload: importedState });
                     toast({
                         title: "Backup imported",
-                        description: `Restored ${accounts.length} account(s), ${transactions.length} transaction(s), and app settings. Sign in again to continue.`,
+                        description: `Restored ${importedState.accounts.length} account(s), ${importedState.transactions.length} transaction(s), and app settings. Sign in again to continue.`,
                     });
                     
                     // Update storage estimate
@@ -855,11 +787,16 @@ const DataManagement = () => {
                     const errorName = error instanceof Error ? error.name : '';
                     const errorCode = error && typeof error === 'object' && 'code' in error ? error.code : undefined;
                     const isQuota = errorName === 'QuotaExceededError' || errorCode === 22;
-                    toast({ 
-                        variant: 'destructive', 
-                        title: "Import Error", 
-                        description: isQuota ? "Storage quota exceeded. Please free up space." : "Failed to parse JSON file or save to IndexedDB." 
+                    toast({
+                        variant: 'destructive',
+                        title: "Import Error",
+                        description: isQuota
+                            ? "Storage quota exceeded. Please free up space."
+                            : error instanceof Error
+                                ? error.message
+                                : "Failed to parse JSON file or save to IndexedDB.",
                     });
+                    if (fileInputRef.current) fileInputRef.current.value = '';
                 }
             };
             reader.onerror = (error) => {
