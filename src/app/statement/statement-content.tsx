@@ -7,7 +7,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Home, FileText, FileDown } from "lucide-react";
 import type { Transaction } from "@/lib/types";
-import { format, parseISO, startOfDay } from "date-fns";
+import { format, isValid, parseISO, startOfDay } from "date-fns";
 import StatementPDF from "@/components/statement-pdf";
 import { useAppContext } from "@/hooks/use-app-store";
 import { Separator } from "@/components/ui/separator";
@@ -51,17 +51,29 @@ export function StatementContent() {
 
     const from = searchParams.get('from');
     const to = searchParams.get('to');
-    
+    const parsedFrom = useMemo(() => from ? parseISO(from) : undefined, [from]);
+    const parsedTo = useMemo(() => to ? parseISO(to) : undefined, [to]);
+    const isValidPeriod = Boolean(
+        parsedFrom && parsedTo &&
+        isValid(parsedFrom) && isValid(parsedTo) &&
+        parsedFrom.getTime() <= parsedTo.getTime()
+    );
+
     const transactionsWithBalance = useMemo(() => {
-        if (!state || !from || !to || !state.accounts?.[0]) return [];
-        const fromDate = startOfDay(parseISO(from));
-        const toDate = new Date(parseISO(to).setHours(23, 59, 59, 999));
+        if (!state || !isValidPeriod || !parsedFrom || !parsedTo || !state.accounts?.[0]) return [];
+        const fromDate = startOfDay(parsedFrom);
+        const toDate = new Date(parsedTo);
+        toDate.setHours(23, 59, 59, 999);
         const account = state.accounts[0];
         return calculateStatementBalances(state.transactions, account.id, account.balance, fromDate, toDate);
-    }, [state, from, to]);
+    }, [state, parsedFrom, parsedTo, isValidPeriod]);
     
     const handleDownloadPdf = async () => {
-        if (!from || !to || !state) return;
+        if (!state) return;
+        if (!isValidPeriod || !parsedFrom || !parsedTo) {
+            toast({ variant: 'destructive', title: 'Invalid date range', description: 'Select a valid statement start and end date.' });
+            return;
+        }
         if (!state.accounts?.[0]) {
             toast({ variant: 'destructive', title: 'No account found', description: 'Add or import an account before generating a statement.' });
             return;
@@ -73,10 +85,9 @@ export function StatementContent() {
             const pdfDataUri = await StatementPDF.generatePdfDataUri({
                 account: state.accounts[0],
                 transactions: transactionsWithBalance,
-                period: { from: new Date(from), to: new Date(to) },
+                period: { from: parsedFrom, to: parsedTo },
                 banner: state.settings.pdfBanner,
                 lastPagePdfDataUri: state.settings.lastPagePdfDataUri,
-                pdfPassword: state.settings.pdfPassword,
             });
             
             const accountDigits = String(state.accounts[0].accountNumber || '').replace(/\D/g, '');
@@ -126,7 +137,7 @@ export function StatementContent() {
     
     if (!state) return null; // Or a loading state
     if (!state.accounts?.[0]) return <div className="p-4 text-center">No account is available. Import a valid app backup or add an account before generating a statement.</div>;
-    if (!from || !to) return <div className="p-4 text-center">Invalid date range provided.</div>
+    if (!isValidPeriod) return <div className="p-4 text-center">Invalid date range provided. Return to Account Statement and select valid dates.</div>
 
     return (
         <div className="pnb-page flex flex-col min-h-screen bg-white">

@@ -14,7 +14,7 @@ import { format } from 'date-fns';
 import { cn, formatCurrency } from '@/lib/utils';
 import { RupeeIcon } from '@/components/rupee-icon';
 
-import * as numberToWords from 'number-to-words';
+import { amountToIndianWords } from '@/lib/amount-to-words';
 
 type Step = 'summary' | 'tpin';
 
@@ -80,7 +80,7 @@ function ConfirmTransferPage() {
 
 
   const numericAmount = currentTransfer.amount;
-  const amountInWords = numberToWords.toWords(numericAmount).replace(/\b\w/g, (l: string) => l.toUpperCase()) + ' Only';
+  const amountInWords = amountToIndianWords(numericAmount);
   const formattedAmount = formatCurrency(numericAmount);
   const selectedTransferMode = currentTransfer.transferMode || 'imps';
   const chargeAmount = selectedTransferMode === 'imps'

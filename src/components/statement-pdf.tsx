@@ -10,15 +10,17 @@ interface StatementPDFProps {
     period: { from: Date; to: Date };
     banner: string;
     lastPagePdfDataUri?: string;
-    pdfPassword?: string;
 }
 
 // This function now returns a Promise that resolves to the PDF as a data URI
 const generatePdfDataUri = async (props: StatementPDFProps): Promise<string> => {
     const { account, transactions, period, banner, lastPagePdfDataUri } = props;
 
-    const statementPassword = account.accountNumber.replace(/\s+/g, '');
+    const statementPassword = String(account.accountNumber || '').replace(/\s+/g, '');
     if (!statementPassword) throw new Error('Cannot protect the statement because the account number is missing.');
+    if (!Number.isFinite(period.from.getTime()) || !Number.isFinite(period.to.getTime()) || period.from > period.to) {
+        throw new Error('The statement date range is invalid. Select a valid From and To date.');
+    }
     const doc = new jsPDF({
         orientation: 'p',
         unit: 'mm',
@@ -36,12 +38,15 @@ const generatePdfDataUri = async (props: StatementPDFProps): Promise<string> => 
     const addHeader = () => {
         if (banner) {
             try {
-                const match = banner.match(/data:image\/(.*?);/);
-                if (!match || match.length < 2) {
-                    throw new Error("Could not determine image type from data URI.");
-                }
-                const imageType = match[1].toUpperCase();
-                doc.addImage(banner, imageType, margin, 5, pageWidth - margin * 2, 25, undefined, 'FAST');
+                const imageInfo = doc.getImageProperties(banner);
+                const maxWidth = pageWidth - margin * 2;
+                const maxHeight = 25;
+                const scale = Math.min(maxWidth / imageInfo.width, maxHeight / imageInfo.height);
+                const imageWidth = imageInfo.width * scale;
+                const imageHeight = imageInfo.height * scale;
+                const imageX = margin + (maxWidth - imageWidth) / 2;
+                const imageY = 5 + (maxHeight - imageHeight) / 2;
+                doc.addImage(banner, imageInfo.fileType, imageX, imageY, imageWidth, imageHeight, undefined, 'FAST');
             } catch (e) {
                 console.error("Error adding banner image to PDF", e);
             }
@@ -51,15 +56,25 @@ const generatePdfDataUri = async (props: StatementPDFProps): Promise<string> => 
         const detailHeight = 6;
         const valueX = margin + 38;
         const valueWidth = pageWidth - margin - valueX;
+        const ensureHeaderSpace = (requiredHeight: number) => {
+            const bottomLimit = doc.internal.pageSize.height - margin - 5;
+            if (yPos + requiredHeight > bottomLimit) {
+                doc.addPage('a4', 'p');
+                yPos = margin + 8;
+            }
+        };
         const drawDetailRows = (rows: Array<[string, string]>) => {
             rows.forEach(([label, value]) => {
+                const wrappedValue = doc.splitTextToSize(value?.trim() || '-', valueWidth);
+                const rowHeight = detailHeight * Math.max(1, wrappedValue.length);
+                ensureHeaderSpace(rowHeight);
                 doc.text(label, margin, yPos);
-                const wrappedValue = doc.splitTextToSize(value || '', valueWidth);
                 doc.text(wrappedValue, valueX, yPos);
-                yPos += detailHeight * Math.max(1, wrappedValue.length);
+                yPos += rowHeight;
             });
         };
 
+        ensureHeaderSpace(detailHeight * 2);
         doc.setFont('times', 'bold');
         doc.setFontSize(11);
         doc.text('Branch Details', margin, yPos);
@@ -76,6 +91,7 @@ const generatePdfDataUri = async (props: StatementPDFProps): Promise<string> => 
             ['MICR Code:', account.micrCode || ''],
         ]);
 
+        ensureHeaderSpace(detailHeight * 2);
         yPos += detailHeight * 2;
         doc.setFont('times', 'bold');
         doc.setFontSize(11);
@@ -94,13 +110,17 @@ const generatePdfDataUri = async (props: StatementPDFProps): Promise<string> => 
             ['Nominee:', account.nominee || 'N/A'],
         ]);
 
+        ensureHeaderSpace(detailHeight * 2);
         yPos += detailHeight * 2;
         doc.setFont('times', 'bold');
         doc.setFontSize(11);
         const summaryLine = 'Statement of Account: ' + account.accountNumber + ' For Period: ' + format(period.from, 'dd/MM/yyyy') + ' to ' + format(period.to, 'dd/MM/yyyy');
-        doc.text(summaryLine, margin, yPos);
+        const summaryLines = doc.splitTextToSize(summaryLine, pageWidth - margin * 2);
+        const summaryHeight = detailHeight * Math.max(1, summaryLines.length);
+        ensureHeaderSpace(summaryHeight + detailHeight);
+        doc.text(summaryLines, margin, yPos);
 
-        finalYPos = yPos + (detailHeight * 2);
+        finalYPos = yPos + summaryHeight + detailHeight;
     };
 
     const renderTable = (dataRows: (Transaction & { balance: number })[], startY: number) => {
@@ -115,6 +135,16 @@ const generatePdfDataUri = async (props: StatementPDFProps): Promise<string> => 
                 tx.description || '',
             ];
         });
+
+        if (tableRows.length === 0) {
+            const messageY = startY + 8 > doc.internal.pageSize.height - margin
+                ? (doc.addPage('a4', 'p'), margin + 8)
+                : startY + 8;
+            doc.setFont('times', 'normal');
+            doc.setFontSize(11);
+            doc.text('No transactions found for the selected statement period.', margin, messageY);
+            return;
+        }
 
         autoTable(doc, {
             head: [tableColumn],
@@ -154,7 +184,7 @@ const generatePdfDataUri = async (props: StatementPDFProps): Promise<string> => 
                 4: { halign: 'center', cellWidth: 35 },
                 5: { halign: 'left', cellWidth: 58 },
             },
-            showHead: 'firstPage',
+            showHead: 'everyPage',
         });
     };
     

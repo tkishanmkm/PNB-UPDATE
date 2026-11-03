@@ -13,8 +13,13 @@ import { Card, CardContent } from '@/components/ui/card';
 import { formatCurrency } from '@/lib/utils';
 import { RupeeIcon } from '@/components/rupee-icon';
 import jsPDF from 'jspdf';
+import { amountToIndianWords } from '@/lib/amount-to-words';
 
-import * as numberToWords from 'number-to-words';
+const maskAccountNumber = (value: string | undefined) => {
+    const digits = String(value || '').replace(/\D/g, '');
+    if (!digits) return '-';
+    return 'X'.repeat(Math.max(0, digits.length - 4)) + digits.slice(-4);
+};
 
 const DetailRow = ({ label, children }: { label: string; children: React.ReactNode }) => (
     <div className="flex w-full justify-between items-start gap-2 py-1.5">
@@ -54,7 +59,7 @@ function TransferSuccess() {
         : undefined;
     const chargeAmount = chargeTransaction ? Math.abs(chargeTransaction.amount) : 0;
     const totalDebitAmount = amount + chargeAmount;
-    const amountInWords = numberToWords.toWords(amount).replace(/\b\w/g, (l: string) => l.toUpperCase()) + ' Only';
+    const amountInWords = amountToIndianWords(amount);
     const formattedAmountWithCommas = amount.toLocaleString('en-IN', { useGrouping: true, minimumFractionDigits: 2, maximumFractionDigits: 2 });
     const transferDate = transferTransaction ? new Date(transferTransaction.date) : new Date(NaN);
     const remarks = transferTransaction?.remarks || '';
@@ -148,11 +153,11 @@ function TransferSuccess() {
         };
 
         addSectionTitle('FROM');
-        addRow('Account holder', user.name, true);
-        // Account number label on the left; app logo immediately before the full number on the right.
+        addRow('', user.name || '-', true);
+        // Account number label on the left; app logo immediately before the masked number on the right.
         doc.setFont('helvetica', 'normal'); doc.setFontSize(10); doc.setTextColor(100, 106, 114);
         doc.text('Account number', margin, y);
-        const senderNumber = String(account.accountNumber || '-');
+        const senderNumber = maskAccountNumber(account.accountNumber);
         const senderNumberWidth = doc.getTextWidth(senderNumber);
         let senderNumberX = right;
         if (settings.appLogo) {
@@ -168,8 +173,8 @@ function TransferSuccess() {
         y += 7.5;
 
         y += 2;
-        addSectionTitle('TO');
-        addRow('Payee name', payee.name, true);
+        addSectionTitle('TO PAYEE');
+        addRow('', payee.name || '-', true);
         // Payee label left; standard bank icon immediately before account number at right.
         const payeeAccount = String(payee.accountNumber || '-');
         doc.setFont('helvetica', 'normal'); doc.setFontSize(10); doc.setTextColor(100, 106, 114);
@@ -265,10 +270,10 @@ function TransferSuccess() {
                             <DetailRow label="Account number">
                                 <span className="inline-flex items-center justify-end gap-0.5 whitespace-nowrap text-gray-600">
                                     {settings.appLogo && <Image src={settings.appLogo} width={16} height={16} alt="PNB ONE app logo" className="shrink-0" />}
-                                    <span>{account.accountNumber}</span>
+                                    <span>{maskAccountNumber(account.accountNumber)}</span>
                                 </span>
                             </DetailRow>
-                            <DetailRow label="TO"><span className="font-semibold text-gray-800">{payee.name}</span></DetailRow>
+                            <DetailRow label="TO PAYEE"><span className="font-semibold text-gray-800">{payee.name}</span></DetailRow>
                             <DetailRow label="Payee account number"><span className="inline-flex items-center justify-end gap-1 whitespace-nowrap text-gray-600"><Landmark className="h-4 w-4 shrink-0 text-gray-500" aria-label="Bank" /><span>{payee.accountNumber}</span></span></DetailRow>
                             <DetailRow label="IFSC"><span className="text-gray-600">{String(payee.ifsc || '-').toUpperCase()}</span></DetailRow>
                             <DetailRow label="Transfer mode"><span className="font-semibold uppercase text-gray-800">{transferMode}</span></DetailRow>

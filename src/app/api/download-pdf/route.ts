@@ -1,12 +1,23 @@
 export const runtime = 'nodejs';
 
+const MAX_REQUEST_BYTES = 36 * 1024 * 1024;
+const MAX_PDF_DATA_URI_CHARS = 34 * 1024 * 1024;
+
 export async function POST(request: Request) {
   try {
+    const contentLength = Number(request.headers.get('content-length'));
+    if (Number.isFinite(contentLength) && contentLength > MAX_REQUEST_BYTES) {
+      return new Response('PDF upload is too large. Maximum request size is 36 MB.', { status: 413 });
+    }
+
     const form = await request.formData();
     const pdfData = form.get('pdfData');
     const requestedFilename = form.get('filename');
     if (typeof pdfData !== 'string' || !/^data:application\/pdf(?:;[^,]*)?;base64,/i.test(pdfData)) {
       return new Response('Invalid PDF payload', { status: 400 });
+    }
+    if (pdfData.length > MAX_PDF_DATA_URI_CHARS) {
+      return new Response('PDF data is too large. Maximum encoded PDF size is 34 MB.', { status: 413 });
     }
     const base64 = pdfData.slice(pdfData.indexOf(',') + 1);
     const binary = Buffer.from(base64, 'base64');
