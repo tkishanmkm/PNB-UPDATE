@@ -829,3 +829,223 @@ body {
 .pnb-reference-screen-body .pnb-reference-list-card {
   transition: transform .16s ease, box-shadow .16s ease;
 }
+
+
+.pnb-profile-main {
+  background: #fff;
+}
+
+.pnb-profile-section {
+  overflow: hidden;
+  border: 1px solid #efedef;
+  border-radius: 25px;
+  background: #f6f5f6;
+}
+
+.pnb-profile-section-header {
+  display: flex;
+  min-height: 82px;
+  align-items: center;
+  gap: 14px;
+  padding: 7px 14px 3px;
+}
+
+.pnb-profile-section-header h2 {
+  flex: 1;
+  min-width: 0;
+  color: #242024;
+  font-size: 19px;
+  font-weight: 750;
+  line-height: 1.25;
+}
+
+.pnb-profile-section-icon {
+  display: grid;
+  width: 68px;
+  height: 58px;
+  flex: 0 0 68px;
+  place-items: center;
+  border: 1px solid;
+  border-radius: 16px;
+}
+
+.pnb-profile-section-rose {
+  border-color: #f8ccd6;
+  background: #ffe8ed;
+  color: #ad173e;
+}
+
+.pnb-profile-section-blue {
+  border-color: #b9e4f0;
+  background: #dff3f8;
+  color: #147996;
+}
+
+.pnb-profile-tile {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  align-items: center;
+  gap: 7px;
+  text-align: center;
+}
+
+.pnb-profile-tile-icon {
+  display: grid;
+  width: 100%;
+  aspect-ratio: 1.22 / 1;
+  place-items: center;
+  border: 1px solid #f1eff1;
+  border-radius: 22px;
+  background: #fff;
+  color: #ad173e;
+  box-shadow: 0 1px 2px rgba(30,20,25,.025);
+}
+
+.pnb-profile-tile-label {
+  display: -webkit-box;
+  min-height: 34px;
+  overflow: hidden;
+  color: #625b60;
+  font-family: "Mukta", "Roboto", Arial, sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.4;
+  text-align: center;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.pnb-profile-tile-disabled .pnb-profile-tile-icon {
+  color: #ad173e;
+}
+
+.pnb-reference-list-card {
+  min-height: 78px;
+  gap: 12px;
+  padding: 8px;
+  border-radius: 13px;
+  background: #f6f5f6;
+}
+
+.pnb-reference-list-icon {
+  width: 62px;
+  height: 62px;
+  flex: 0 0 62px;
+  border: 1px solid rgba(160,35,70,.15);
+  border-radius: 13px;
+  color: currentColor;
+  background: transparent;
+}
+
+.pnb-reference-list-arrow {
+  width: 27px;
+  height: 27px;
+  flex: 0 0 27px;
+  border-radius: 50%;
+  background: #fff;
+  color: #b51b44;
+}
+
+.pnb-invest-title {
+  color: #262126;
+  font-family: "Mukta", "Roboto", Arial, sans-serif;
+  font-size: 12px;
+  font-weight: 650;
+  line-height: 18px;
+}
+
+.pnb-invest-description {
+  margin-top: 2px;
+  color: #777176;
+  font-family: "Mukta", "Roboto", Arial, sans-serif;
+  font-size: 11px;
+  font-weight: 400;
+  line-height: 13px;
+}
+
+.pnb-reference-list-icon.bg-rose-100 { background: #ffe8eb; color: #d9687f; }
+.pnb-reference-list-icon.bg-sky-100 { background: #e1f3f8; color: #55a6bf; }
+.pnb-reference-list-icon.bg-amber-100 { background: #fff5d9; color: #c7a54b; }
+.pnb-reference-list-icon.bg-emerald-100 { background: #e5f5e8; color: #77b58c; }
+.pnb-reference-list-icon.bg-orange-100 { background: #fff0df; color: #d9a66f; }
+
+.pnb-reference-list-arrow.bg-rose-100 { color: #d9687f; }
+.pnb-reference-list-arrow.bg-sky-100 { color: #55a6bf; }
+.pnb-reference-list-arrow.bg-amber-100 { color: #c7a54b; }
+.pnb-reference-list-arrow.bg-emerald-100 { color: #77b58c; }
+
+.pnb-send-main {
+  background: #fff !important;
+}
+
+.pnb-send-subsection {
+  border-top: 1px solid #ece9eb;
+  padding: 18px 8px 8px;
+}
+
+.pnb-send-other-tile {
+  display: flex;
+  min-height: 96px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 10px 6px;
+  border: 1px solid #eee9ec;
+  border-radius: 17px;
+  background: #f7f6f7;
+  color: #886021;
+  font-size: 11px;
+  font-weight: 650;
+  line-height: 1.35;
+  text-align: center;
+}
+
+.pnb-account-action-disabled {
+  cursor: not-allowed;
+  opacity: .75;
+}
+
+.pnb-dashboard-action-disabled {
+  cursor: not-allowed;
+  opacity: .72;
+}
+
+.pnb-dashboard-action-disabled:active {
+  transform: none;
+}
+
+
+/* Fine alignment to the APK ServicesSectionRow and IconTile measurements. */
+.pnb-service-group {
+  border-radius: 16px;
+}
+
+.pnb-service-group-heading {
+  min-height: 72px;
+  gap: 12px;
+  padding: 5px 12px;
+  font-size: 15px;
+  font-weight: 650;
+}
+
+.pnb-service-group-icon {
+  width: 62px;
+  height: 62px;
+  flex-basis: 62px;
+  border-radius: 12px;
+}
+
+.pnb-service-tile-icon {
+  width: 68px;
+  height: 68px;
+  max-width: 68px;
+  aspect-ratio: 1 / 1;
+  border-radius: 16px;
+}
+
+.pnb-service-tile-label {
+  font-size: 11px;
+  line-height: 14px;
+}

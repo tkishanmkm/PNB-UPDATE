@@ -1,37 +1,49 @@
-# PNB ONE 4.43 UI extraction and PNB-UPDATE reference work
+# PNB ONE 4.43 UI extraction and PNB-UPDATE reference implementation
 
-## Source APK
-- File: PNB-ONE_4.43_apkcube.apks
-- Package id: com.Version1
-- Version: 4.43 (version code 260)
-- Split APK files extracted: 32
-- Full decoded base resource tree: 74,561 files under PNB-ONE_4.43-extracted/decoded-base.
+## Source package
+- APK archive: PNB-ONE_4.43_apkcube.apks
+- Android package: com.Version1
+- App version: 4.43 (version code 260)
+- Split APK members extracted: **32**
+- Decoded base APK resource tree: **74,561 files** under PNB-ONE_4.43-extracted/decoded-base.
 
-## Extracted UI material
-- Android manifest, resource XMLs, resource tables and native layout references: 4,493 files in android-resource-reference.
-- PNB CCMS package image tree: 160 image assets in package-images.
-- Curated resource folder total: 4,794 files.
-- Web-ready images/icons/logos staged in the PNB-UPDATE app: 293 files under public/pnb-one-ui.
-- Six user-supplied screenshot references retained in reference-screenshots.
-- Roboto and Mukta font resources were identified in the decoded APK. Font binaries remain in the local full decode and were not copied into the web app.
+## Android UI resources
+- Native Android UI reference pack: **4,493 files** in android-resource-reference (36,937,385 bytes).
+- XML layouts/styles/values/menus: **3,020**.
+- PNG/WebP/JPEG/AVIF image resources: **1,443**.
+- Included resource families: layout variants, drawable variants, mipmap variants, animation/animator, color, values, menu, interpolator and navigation resources.
+- This is a reference resource pack from the APK's Android resource tree; the visible main banking screens are implemented in the React Native bundle, not in these native Android XML files.
 
-## Bundle/source limitation
-The app bundle is React Native Hermes bytecode (assets/index.android.bundle). It does not include the original readable JSX/TypeScript source project. The Android resources and image package were decoded, and screen layouts were reconstructed from the supplied six screenshots plus the visible resource/text references. JADX was attempted for DEX inspection but did not complete its full class pass, so this report does not claim a full Java/JS source decompilation.
+## PNB CCMS UI assets
+- Full PNB CCMS package images and icons trees copied into ccms-assets.
+- Copied CCMS files: **178** ({'icons': 18, 'images': 160}).
+- Web-ready CCMS images and icons are also staged under PNB-UPDATE/public/pnb-one-ui/ccms/.
+- Existing curated brand, navigation, common icon, payment logo, splash and dashboard assets remain in their dedicated folders.
+- Six screenshot references supplied in the source folder are retained under reference-screenshots.
 
-## Screens based on the references
-1. Dashboard ? greeting/avatar header, account carousel area, expanded burgundy account card, balance visibility, account shortcuts, pastel two-column instant actions, quick links, and raised bottom navigation.
-2. Send Money ? four-across action tiles, Manage Payee link to the existing beneficiary list, and the existing Indo-Nepal remittance row.
-3. Services ? searchable service catalogue with collapsible groups and four-column icon tiles.
-4. Profile Settings ? two grouped four-column icon grids using only PNB-UPDATE's existing profile/account routes.
-5. Government Schemes ? reference-style list of scheme information cards.
-6. Invest ? reference-style list of investment/product information cards.
+## Hermes bytecode analysis
+- Main React Native bundle: assets/index.android.bundle, HBC v96.
+- Bundle metadata: **283,285 functions** and **191,493 strings**.
+- Function-source/debug table extracted: **914 entries**.
+- String table saved as PNB-ONE_4.43-extracted/hermes-analysis/strings.txt (34,886,075 bytes).
+- **28 targeted screen/component functions** were decompiled individually into hermes-analysis/screen-functions.
+- The APK does not contain the original readable JSX/TypeScript project. A full function/module index pass was stopped because it consumed several gigabytes of RAM; the targeted cross-reference and single-function extraction passes succeeded. The report therefore does not claim a complete source-code decompilation.
+- JADX was also attempted for DEX inspection but its full class pass did not complete.
 
-## New PNB-UPDATE routes
-- /services
-- /government-schemes
-- /invest
+## Screens reconstructed from the six references
+1. **Dashboard** ? greeting/avatar, account carousel/card, balance visibility, four primary quick-action tiles, account shortcuts, quick links and raised bottom navigation.
+2. **Send Money** ? four-across send-to tiles, Manage Payee, international transfer rows and the Others card group. Existing PNB-UPDATE transfer handlers are retained; items without an implementation remain visual-only.
+3. **Services** ? searchable catalogue, expandable section rows and four-column icon tiles.
+4. **Profile Settings** ? grouped four-column profile and account-settings grids, using the existing PNB-UPDATE routes.
+5. **Government Schemes** ? reference-style list cards; informational only.
+6. **Invest** ? reference-style list cards; informational only.
 
-The Government Schemes and Invest catalogue rows are visual information cards only. They do not claim to submit scheme or investment applications because those transaction workflows are not present in the current PNB-UPDATE code. Unsupported quick actions remain disabled; supported routes continue to use existing PNB-UPDATE handlers.
+## Behavior and safety boundaries
+- Existing PNB-UPDATE state, account data, transfer routes, statement generation, login, logout and settings logic remain the application's source of truth.
+- Catalogue entries with no matching implemented PNB-UPDATE workflow are shown as non-operational/informational; no fake payment, investment, bill-pay or scheme-submission handler was added.
+- No backend code, credentials, signing keys, certificates or unrelated third-party web bundles were copied into the app.
+- Font families were identified in the APK, but font binaries were not copied into the project.
 
-## Project isolation
-All code changes are made in the PNB-UPDATE working copy whose origin remote is https://github.com/tkishanmkm/PNB-UPDATE.git. The source repository tkishanmkm/pnb- is not used as a working directory or push target.
+## Repository isolation
+- All app edits, checks, commits and pushes are confined to PNB-UPDATE.
+- The old repository is not used as a working directory or push target.

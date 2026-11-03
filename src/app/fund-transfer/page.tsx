@@ -4,7 +4,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Home, Landmark, Repeat, ChevronRight } from "lucide-react";
+import { ArrowLeft, Home, Landmark, Repeat, ChevronRight, Globe2, Banknote, PiggyBank } from "lucide-react";
 import { RupeeIcon } from "@/components/rupee-icon";
 
 const TransferFundsIcon = () => (
@@ -50,8 +50,8 @@ const transferOptions = [
     },
     {
         icon: Repeat,
-        title: "Indo-Nepal Remittance",
-        description: "Indo Nepal transfers can be done using this option",
+        title: "Send Money Nepal",
+        description: "Send money from India to Nepal, up to \u20B92 lakh per transaction.",
         href: "#",
         id: "indo-nepal"
     },
@@ -67,7 +67,7 @@ export default function FundTransferPage() {
     const primaryOptions = transferOptions.filter((item) =>
         ["self-transfer", "beneficiary-transfer", "quick-transfer"].includes(item.id)
     );
-    const internationalOption = transferOptions.find((item) => item.id === "indo-nepal");
+    const internationalOption = transferOptions.find((item) => item.id === "indo-nepal")!;
 
     const renderTransferTile = (item: typeof transferOptions[number]) => (
         <button
@@ -101,7 +101,7 @@ export default function FundTransferPage() {
                 </Link>
             </header>
 
-            <main className="flex-1 space-y-4 p-3 pb-8">
+            <main className="pnb-send-main flex-1 space-y-4 p-3 pb-8">
                 <section className="rounded-2xl border border-rose-100 bg-white p-3 shadow-sm">
                     <div className="mb-3 flex items-center justify-between px-1">
                         <h2 className="text-sm font-bold text-gray-800">Send Money to</h2>
@@ -110,7 +110,7 @@ export default function FundTransferPage() {
                     <div className="grid grid-cols-4 gap-1 sm:gap-2">
                         {primaryOptions.map(renderTransferTile)}
                         <div className="flex min-h-[122px] min-w-0 flex-col items-center justify-center gap-2 px-1 py-4 text-center opacity-80" aria-disabled="true">
-                            <span className="grid h-12 w-12 place-items-center rounded-full bg-rose-50 text-primary"><Image src="/pnb-one-ui/payment-logos/ic_upi_logo.svg" alt="" width={34} height={34} unoptimized/></span>
+                            <span className="grid h-[66px] w-[66px] place-items-center rounded-full bg-rose-50 text-primary shadow-sm"><Image src="/pnb-one-ui/payment-logos/ic_upi_logo.svg" alt="" width={40} height={40} unoptimized/></span>
                             <span className="line-clamp-2 text-[11px] font-bold leading-4 text-gray-800">UPI (Payments)</span>
                         </div>
                     </div>
@@ -121,6 +121,16 @@ export default function FundTransferPage() {
                         <div className="px-1">
                             <h2 className="text-sm font-bold text-gray-800">Make International Payment</h2>
                             <p className="mt-0.5 text-[11px] text-gray-500">Send money through supported remittance services</p>
+                        </div>
+                        <div className="flex w-full items-center gap-3 rounded-2xl border border-rose-100 bg-white p-4 text-left shadow-sm opacity-80" aria-disabled="true">
+                            <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-sky-50 text-sky-700">
+                                <Globe2 className="h-6 w-6" strokeWidth={1.8}/>
+                            </span>
+                            <span className="min-w-0 flex-1">
+                                <span className="block text-sm font-bold text-gray-800">Send Money Outside India</span>
+                                <span className="mt-1 block text-xs leading-5 text-gray-500">Send up to USD 250,000 per financial year (April\u2013March) abroad.</span>
+                            </span>
+                            <ChevronRight className="h-5 w-5 shrink-0 text-gray-400"/>
                         </div>
                         <button
                             type="button"
@@ -139,6 +149,24 @@ export default function FundTransferPage() {
                         </button>
                     </section>
                 )}
+                <section className="space-y-3">
+                    <h2 className="px-1 text-sm font-bold text-gray-800">Others</h2>
+                    <div className="grid grid-cols-3 gap-2">
+                        {[
+                            { title: "Cardless Cash", Icon: Banknote, tone: "bg-rose-50 text-rose-700" },
+                            { title: "To Other Sukanya Samriddhi Account", Icon: PiggyBank, tone: "bg-amber-50 text-amber-700" },
+                            { title: "To PPF Account", Icon: Landmark, tone: "bg-emerald-50 text-emerald-700" }
+                        ].map(({title, Icon, tone}) => (
+                            <div key={title} className="flex min-h-[118px] min-w-0 flex-col items-center justify-center gap-2 rounded-2xl border border-rose-100 bg-white px-2 py-3 text-center shadow-sm opacity-80" aria-disabled="true">
+                                <span className={"grid h-12 w-12 place-items-center rounded-2xl " + tone}>
+                                    <Icon className="h-6 w-6" strokeWidth={1.8}/>
+                                </span>
+                                <span className="text-[10px] font-bold leading-4 text-gray-700">{title}</span>
+                            </div>
+                        ))}
+                    </div>
+                </section>
+
             </main>
         </div>
     );

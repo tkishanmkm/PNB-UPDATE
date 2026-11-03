@@ -7,7 +7,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Carousel, CarouselContent, CarouselItem } from "@/components/ui/carousel";
-import { Bell, ChevronRight, Eye, EyeOff, BookOpen, UserPlus, CreditCard, ShoppingCart, Home, Briefcase, Tractor, Link2, Send, CheckCircle2, Contact, Users, CreditCard as CreditCardIcon, HandCoins, Search, LogOut, QrCode, Percent, Leaf, PercentSquare, Warehouse, Car, GraduationCap, RefreshCw, TrendingUp, Landmark, FileCheck, Umbrella } from "lucide-react";
+import { Bell, ChevronRight, Eye, EyeOff, BookOpen, Banknote, UserPlus, CreditCard, ShoppingCart, Home, Briefcase, Tractor, Link2, Send, CheckCircle2, Contact, Users, CreditCard as CreditCardIcon, HandCoins, Search, LogOut, QrCode, Percent, Leaf, PercentSquare, Warehouse, Car, GraduationCap, RefreshCw, TrendingUp, Landmark, FileCheck, Umbrella } from "lucide-react";
 import { useAppContext } from "@/hooks/use-app-store";
 import { cn, formatCurrency } from "@/lib/utils";
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
@@ -86,25 +86,6 @@ const investApplyItems: DynamicIconItem[] = [
     { iconKey: 'insurance', defaultIcon: Umbrella, label: "Insurance"},
 ];
 
-const ServicesIcon = () => (
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M10 4H4C2.89543 4 2 4.89543 2 6V12H10V4Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-        <path d="M20 4H14V8H20V4Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-        <path d="M14 12H2V18C2 19.1046 2.89543 20 4 20H10V12Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-        <path d="M20 12H14V20H20C21.1046 20 22 19.1046 22 18V16C22 13.7909 20.2091 12 18 12H14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-    </svg>
-);
-
-const MyRewardsIcon = () => (
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-        <path d="M8.00977 15.25L8.00977 8.75" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-        <path d="M12 15.25V8.75" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-        <path d="M15.9902 15.25V8.75" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-    </svg>
-);
-
-
 const EmergencyIcon = () => (
      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
         <path d="M12 4C8.68629 4 6 6.68629 6 10V13.5C6 14.8807 7.11929 16 8.5 16H15.5C16.8807 16 18 14.8807 18 13.5V10C18 6.68629 15.3137 4 12 4Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
@@ -117,10 +98,10 @@ const EmergencyIcon = () => (
 
 
 const bottomNavItems: DynamicIconItem[] = [
-  { iconKey: 'services', defaultIcon: ServicesIcon, href: '/services', label: 'Services' },
-  { iconKey: 'myRewards', defaultIcon: MyRewardsIcon, href: '#', label: 'My Rewards' },
-  { iconKey: 'scan', defaultIcon: QrCode, href: '#', label: 'Scan', isCentral: true },
+  { iconKey: 'pnbShoppe', defaultIcon: ShoppingCart, href: '/services', label: 'Shoppe' },
   { iconKey: 'offers', defaultIcon: Percent, href: '#', label: 'Offers' },
+  { iconKey: 'scan', defaultIcon: QrCode, href: '#', label: 'Scan & Pay', isCentral: true },
+  { iconKey: 'creditCard', defaultIcon: CreditCard, href: '#', label: 'Credit Card' },
   { iconKey: 'emergency', defaultIcon: EmergencyIcon, href: '#', label: 'Emergency' },
 ];
 
@@ -141,6 +122,9 @@ function DashboardPageComponent() {
   }
   
   const formattedBalance = formatCurrency(account.balance);
+  const depositCount = state.accounts.filter((item) => /deposit|fixed|recurring|fd|rd/i.test(item.type)).length;
+  const prepaidCount = state.accounts.filter((item) => /prepaid/i.test(item.type)).length;
+  const primaryCount = Math.max(0, state.accounts.length - depositCount - prepaidCount);
 
   const renderIconRow = (items: typeof popularItems) => (
       <div className="grid grid-cols-5 gap-y-4 gap-x-2 text-center">
@@ -239,7 +223,7 @@ function DashboardPageComponent() {
           </section>
           <div className="px-4 pb-1 bg-white">
             <div className="pnb-account-tabs">
-              <span>Primary</span><span>Deposits</span><span>Prepaid Cards</span>
+              <span>Primary ({primaryCount})</span><span>Deposits ({depositCount})</span><span>Prepaid Cards ({prepaidCount})</span>
             </div>
           </div>
           {/* Account Cards Section */}
@@ -273,7 +257,7 @@ function DashboardPageComponent() {
                         </Button>
                       </div>
                       <div className="grid grid-cols-3 gap-2 border-t border-white/20 pt-3">
-                        <Link href="/saving-account-details" className="pnb-account-action">A/c Details</Link>
+                        <span className="pnb-account-action pnb-account-action-disabled" aria-disabled="true">Debit Card</span>
                         <Link href="/account-statement" className="pnb-account-action">Get Statement</Link>
                         <Link href="/services" className="pnb-account-action">A/c Services</Link>
                       </div>
@@ -336,17 +320,15 @@ function DashboardPageComponent() {
               <div className="grid grid-cols-2 gap-2">
                 {[
                   { label: "Send Money", href: "/fund-transfer", icon: Send, tone: "amber" },
-                  { label: "Account Statement", href: "/account-statement", icon: BookOpen, tone: "green" },
-                  { label: "Manage Beneficiaries", href: "/fund-transfer/beneficiary/list", icon: Users, tone: "rose" },
-                  { label: "Profile Settings", href: "/my-profile", icon: Contact, tone: "blue" }
+                  { label: "UPI", href: "#", icon: UPIIcon, tone: "green" },
+                  { label: "Bills & Recharge", href: "#", icon: BillPayIcon, tone: "rose" },
+                  { label: "Open FD/RD", href: "#", icon: Banknote, tone: "blue" }
                 ].map((action) => {
                   const Icon = action.icon;
-                  return (
-                    <Link href={action.href} key={action.label} className={"pnb-dashboard-action-tile pnb-dashboard-action-" + action.tone}>
-                      <span><Icon className="h-7 w-7"/></span>
-                      <span>{action.label}</span>
-                    </Link>
-                  );
+                  const content = <><span><Icon className="h-7 w-7"/></span><span>{action.label}</span></>;
+                  return action.href === "#"
+                    ? <div key={action.label} aria-disabled="true" className={"pnb-dashboard-action-tile pnb-dashboard-action-" + action.tone + " pnb-dashboard-action-disabled"}>{content}</div>
+                    : <Link href={action.href} key={action.label} className={"pnb-dashboard-action-tile pnb-dashboard-action-" + action.tone}>{content}</Link>;
                 })}
               </div>
             </section>
