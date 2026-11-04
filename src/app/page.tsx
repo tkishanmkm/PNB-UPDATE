@@ -3,6 +3,7 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Fingerprint, Phone, QrCode, MapPin, Gift, ShieldCheck, MoreHorizontal, MessageSquare, Twitter, Linkedin, Instagram, Youtube } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -236,7 +237,7 @@ export default function LoginPage() {
         <header className="flex h-16 items-center justify-between border-b bg-white px-4">
           <span className="text-xs font-semibold text-primary">App Version: 4.43</span>
           {headerLogo && <Image src={headerLogo} alt="App Logo" width={140} height={44} className="h-10 w-auto object-contain" />}
-          <span className="flex h-8 w-8 items-center justify-center rounded-full border bg-white text-sm font-semibold text-primary">à¤•A</span>
+          <span className="flex h-8 w-8 items-center justify-center rounded-full border bg-white"><Image src="/pnb-one-ui/apk-mapped/login/icons_prelogin_welcomeavatar.png" alt="PNB ONE welcome" width={32} height={32} unoptimized className="h-8 w-8 object-contain" /></span>
         </header>
         {superLoginStage === 'welcome' ? (
           isLocalImageSource(settings?.pnbBanner) ? <div className="flex w-full justify-center border-b bg-white px-3 py-2"><Image src={settings.pnbBanner} alt="Splash Screen Banner (PNB)" width={600} height={90} className="h-auto max-h-16 w-auto max-w-full object-contain" priority /></div> :
@@ -260,7 +261,7 @@ export default function LoginPage() {
               <div className="flex items-center gap-2"><label htmlFor="super-userid" className="min-w-[100px] text-sm">User ID : <span className="text-red-600">*</span></label><input id="super-userid" className="h-10 min-w-0 flex-1 rounded-md border border-input bg-background px-3 py-2 text-base sm:text-sm" value={superUserId} onChange={e=>setSuperUserId(e.target.value)} autoComplete="username" /><Button variant="outline" size="icon" aria-label="User ID help" onClick={()=>setHelpOpen(v=>!v)}>?</Button></div>
               {helpOpen && <p className="rounded-md bg-muted p-3 text-sm">Default User ID is your Customer ID mentioned on the front page of your Passbook. If you do not remember, use Forgot User ID option.</p>}
               {superLoginError && <p role="alert" className="text-sm text-red-600">{superLoginError}</p>}
-              <div className="flex justify-end gap-5 text-sm font-semibold text-rose-700 underline"><button onClick={()=>setSuperLoginError('New user registration is not available in this local demo.')}>New user?</button><button onClick={()=>{ const customerId = state.accounts.find(a => a.customerId)?.customerId; if (customerId) { setSuperUserId(customerId); setSuperLoginError('Demo User ID filled from the Customer ID saved in Settings.'); } else { setSuperLoginError('No Customer ID is saved in Settings yet. Add it in Account Settings first.'); } }}>Know Your User ID</button></div>
+              <div className="flex justify-end gap-5 text-sm font-semibold text-rose-700 underline"><Link href="/registration">New user?</Link><button onClick={()=>{ const customerId = state.accounts.find(a => a.customerId)?.customerId; if (customerId) { setSuperUserId(customerId); setSuperLoginError('Demo User ID filled from the Customer ID saved in Settings.'); } else { setSuperLoginError('No Customer ID is saved in Settings yet. Add it in Account Settings first.'); } }}>Know Your User ID</button></div>
               <Button className="w-full" onClick={submitUserId}>Continue</Button>
             </div>
           </div></main>
@@ -291,7 +292,7 @@ export default function LoginPage() {
             <span className="text-xs text-primary font-semibold">App Version: 4.43</span>
             {isLocalImageSource(settings?.appLogo) ? (<Image src={settings.appLogo} alt="App Logo" width={120} height={40} className="h-10 w-auto object-contain" />) : (<Image src="/pnb-splash/pnb-logo.png" alt="PNB" width={120} height={54} className="h-10 w-auto object-contain" />)}
             <div className="flex items-center justify-center w-8 h-8 rounded-full border bg-white shadow-sm">
-                <span className="font-semibold text-primary">à¤•A</span>
+                <Image src="/pnb-one-ui/apk-mapped/login/icons_prelogin_welcomeavatar.png" alt="PNB ONE welcome" width={32} height={32} unoptimized className="h-8 w-8 object-contain" />
             </div>
         </header>
 
@@ -353,6 +354,7 @@ export default function LoginPage() {
             <div className="flex items-start justify-between px-4">
                  <div>
                     <p className="text-sm font-semibold text-primary cursor-pointer" onClick={handleTroubleSigningIn}>Trouble Signing In?</p>
+                    <Link href="/registration" className="mt-2 block text-xs font-bold text-primary underline underline-offset-4">NEW USER? REGISTER</Link>
                     <Button type="button" variant="outline" onClick={handleBiometricLogin} className="mt-2 border-primary text-primary rounded-full px-6">
                         <Fingerprint className="mr-2 h-5 w-5" /> LOGIN WITH BIOMETRICS
                     </Button>

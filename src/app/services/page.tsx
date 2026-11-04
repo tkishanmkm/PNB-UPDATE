@@ -1,7 +1,5 @@
 "use client";
 
-﻿"use client";
-
 import { useMemo, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
@@ -23,22 +21,22 @@ type ServiceItem = {
   image?: string;
 };
 
-const serviceGroups: { title: string; icon: LucideIcon; items: ServiceItem[] }[] = [
-  { title: "Pay & Transfer", icon: Send, items: [
-    { title: "Fund Transfer", icon: Send, href: "/fund-transfer", tone: "rose" },
-    { title: "Bill Payments", icon: ReceiptText, tone: "blue" },
+const serviceGroups: { title: string; icon: LucideIcon; iconImage?: string; items: ServiceItem[] }[] = [
+  { title: "Pay & Transfer", icon: Send, iconImage: "/pnb-one-ui/apk-mapped/service-categories/icons_allservices_pay.png", items: [
+    { title: "Fund Transfer", icon: Send, href: "/fund-transfer", tone: "rose", image: "/pnb-one-ui/apk-mapped/service-icons/serviceicon_1.png" },
+    { title: "Bill Payments", icon: ReceiptText, tone: "blue", image: "/pnb-one-ui/apk-mapped/service-icons/serviceicon_2.png" },
     { title: "Generate QR", icon: QrCode, tone: "green" },
     { title: "Approve to Pay", icon: BadgeCheck, tone: "yellow" },
-    { title: "UPI", icon: Wallet, image: "/pnb-one-ui/payment-logos/ic_upi_logo.svg", tone: "green" },
-    { title: "Pay to Mobile", icon: Smartphone, tone: "rose" },
-    { title: "Manage Beneficiary", icon: Users, href: "/fund-transfer/beneficiary/list", tone: "blue" },
-    { title: "Pay to Contact", icon: Contact, tone: "yellow" },
-    { title: "Standing Instructions", icon: CalendarDays, tone: "blue" },
-    { title: "My Transactions", icon: History, href: "/account-statement", tone: "rose" },
-    { title: "View Statement", icon: FileText, href: "/account-statement", tone: "green" },
+    { title: "UPI", icon: Wallet, image: "/pnb-one-ui/apk-mapped/service-icons/serviceicon_3.png", tone: "green" },
+    { title: "Pay to Mobile Number", icon: Smartphone, tone: "rose" },
+    { title: "Manage Beneficiary", icon: Users, href: "/fund-transfer/beneficiary/list", tone: "blue", image: "/pnb-one-ui/apk-mapped/service-icons/serviceicon_4.png" },
+    { title: "Pay to Contact", icon: Contact, tone: "yellow", image: "/pnb-one-ui/apk-mapped/service-icons/serviceicon_9.png" },
+    { title: "Standing Instructions", icon: CalendarDays, tone: "blue", image: "/pnb-one-ui/apk-mapped/service-icons/serviceicon_10.png" },
+    { title: "My Transactions", icon: History, href: "/account-statement", tone: "rose", image: "/pnb-one-ui/apk-mapped/service-icons/serviceicon_8.png" },
+    { title: "View/Generate MMID", icon: FileText, tone: "green", image: "/pnb-one-ui/apk-mapped/service-icons/serviceicon_52.png" },
     { title: "Check IMPS Status", icon: BadgeCheck, tone: "yellow" },
-    { title: "PM CARE", icon: HeartHandshake, href: "/contact-us", tone: "rose" },
-    { title: "Cardless Cash", icon: Banknote, tone: "blue" },
+    { title: "PM Care", icon: HeartHandshake, tone: "rose", image: "/pnb-one-ui/apk-mapped/service-icons/serviceicon_11.png" },
+    { title: "Cardless Cash Withdrawal", icon: Banknote, tone: "blue", image: "/pnb-one-ui/apk-mapped/service-icons/serviceicon_6.png" },
   ]},
   { title: "Accounts & Services", icon: Landmark, items: [
     { title: "My Account", icon: UserRound, href: "/my-account", tone: "rose" },
@@ -95,7 +93,11 @@ export default function ServicesPage() {
           return (
             <section key={group.title} className="pnb-service-group">
               <button className="pnb-service-group-heading" onClick={() => setExpanded(isOpen && !query.trim() ? "" : group.title)} aria-expanded={isOpen}>
-                <span className="pnb-service-group-icon"><GroupIcon className="h-7 w-7"/></span>
+                <span className="pnb-service-group-icon">
+                  {group.iconImage
+                    ? <Image src={group.iconImage} alt="" width={48} height={48} unoptimized className="h-10 w-10 object-contain"/>
+                    : <GroupIcon className="h-7 w-7"/>}
+                </span>
                 <span className="flex-1 text-left">{group.title}</span>
                 <ChevronDown className={"h-6 w-6 text-primary transition-transform " + (isOpen ? "rotate-180" : "")}/>
               </button>
@@ -116,6 +118,3 @@ export default function ServicesPage() {
     </div>
   );
 }
-
-
-

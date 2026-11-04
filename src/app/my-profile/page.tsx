@@ -1,39 +1,41 @@
 "use client";
 
-import React from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { LucideIcon } from "lucide-react";
 import {
   ArrowLeft, Home, ChevronUp, User, KeyRound, ShieldCheck, Fingerprint,
-  XCircle, Landmark, FileText, Wallet, BadgePercent,
+  XCircle, FileText, Wallet, BadgePercent,
   SlidersHorizontal, Eye, Gift, ArrowLeftRight, FileX, Headphones, Settings
 } from "lucide-react";
 
-type ProfileItem = { title: string; icon: LucideIcon; href: string };
+type ProfileItem = { title: string; icon: LucideIcon; href: string; image?: string };
+
+const apkIcons = "/pnb-one-ui/apk-mapped/service-icons";
 
 const profileOptions: ProfileItem[] = [
   { title: "Change MPIN", icon: KeyRound, href: "#" },
   { title: "Set/Reset TPIN", icon: ShieldCheck, href: "/settings?tab=account" },
-  { title: "Enable Biometrics", icon: Fingerprint, href: "#" },
+  { title: "Enable Biometrics", icon: Fingerprint, href: "#", image: "/pnb-one-ui/navigation-icons/biometric.png" },
   { title: "De-activation", icon: XCircle, href: "#" },
-  { title: "Set User ID", icon: User, href: "/settings" },
+  { title: "Set User ID", icon: User, href: "/settings", image: `${apkIcons}/serviceicon_9.png` },
   { title: "Set Account Nickname", icon: User, href: "#" },
-  { title: "Check KYC Status", icon: ShieldCheck, href: "#" },
+  { title: "Check KYC Status", icon: ShieldCheck, href: "#", image: `${apkIcons}/serviceicon_47.png` },
   { title: "Promotional Content Preference", icon: BadgePercent, href: "#" },
 ];
 
 const accountOptions: ProfileItem[] = [
   { title: "Modify Account Access", icon: User, href: "/my-account" },
   { title: "Set Limits", icon: SlidersHorizontal, href: "#" },
-  { title: "Safety Ring", icon: ShieldCheck, href: "#" },
+  { title: "Safety Ring", icon: ShieldCheck, href: "#", image: `${apkIcons}/serviceicon_48.png` },
   { title: "Quick View Balance", icon: Eye, href: "/saving-account-details" },
-  { title: "Reward Points", icon: Gift, href: "#" },
-  { title: "My Transaction", icon: ArrowLeftRight, href: "/account-statement" },
-  { title: "E-Statement Registration", icon: FileText, href: "#" },
-  { title: "E-Statement Deregistration", icon: FileX, href: "#" },
+  { title: "Reward Points", icon: Gift, href: "#", image: `${apkIcons}/serviceicon_18.png` },
+  { title: "My Transaction", icon: ArrowLeftRight, href: "/account-statement", image: `${apkIcons}/serviceicon_8.png` },
+  { title: "E-Statement Registration", icon: FileText, href: "#", image: `${apkIcons}/serviceicon_33.png` },
+  { title: "E-Statement Deregistration", icon: FileX, href: "#", image: `${apkIcons}/serviceicon_31.png` },
   { title: "My Account", icon: User, href: "/my-account" },
-  { title: "Account Statement", icon: FileText, href: "/account-statement" },
+  { title: "Account Statement", icon: FileText, href: "/account-statement", image: `${apkIcons}/serviceicon_45.png` },
   { title: "All Accounts", icon: Wallet, href: "/all-accounts" },
   { title: "Contact Us", icon: Headphones, href: "/contact-us" },
   { title: "App Settings", icon: Settings, href: "/settings" },
@@ -43,7 +45,11 @@ function ProfileTile({ item, index }: { item: ProfileItem; index: number }) {
   const Icon = item.icon;
   const tile = (
     <>
-      <span className="pnb-profile-tile-icon"><Icon className="h-8 w-8" strokeWidth={1.65}/></span>
+      <span className="pnb-profile-tile-icon">
+        {item.image
+          ? <Image src={item.image} alt="" width={34} height={34} unoptimized className="h-8 w-8 object-contain" />
+          : <Icon className="h-8 w-8" strokeWidth={1.65}/>}
+      </span>
       <span className="pnb-profile-tile-label">{item.title}</span>
     </>
   );
@@ -54,10 +60,12 @@ function ProfileTile({ item, index }: { item: ProfileItem; index: number }) {
 
 export default function MyProfilePage() {
   const router = useRouter();
-  const renderGroup = (title: string, group: ProfileItem[], GroupIcon: LucideIcon, tone: "rose" | "blue") => (
+  const renderGroup = (title: string, group: ProfileItem[], tone: "rose" | "blue", iconImage: string) => (
     <section className="pnb-profile-section">
       <header className="pnb-profile-section-header">
-        <span className={"pnb-profile-section-icon pnb-profile-section-" + tone}><GroupIcon className="h-9 w-9" strokeWidth={1.6}/></span>
+        <span className={"pnb-profile-section-icon pnb-profile-section-" + tone}>
+          <Image src={iconImage} alt="" width={48} height={48} unoptimized className="h-10 w-10 object-contain"/>
+        </span>
         <h2>{title}</h2>
         <ChevronUp className="h-6 w-6 shrink-0 text-primary"/>
       </header>
@@ -75,8 +83,8 @@ export default function MyProfilePage() {
         <Link href="/dashboard" aria-label="Home"><Home className="h-6 w-6 text-white"/></Link>
       </header>
       <main className="pnb-profile-main flex-1 space-y-3 p-3 pb-8">
-        {renderGroup("Profile Settings",profileOptions,User,"rose")}
-        {renderGroup("Account Related Settings",accountOptions,Landmark,"blue")}
+        {renderGroup("Profile Settings",profileOptions,"rose",`${apkIcons}/myprofile_profile.png`)}
+        {renderGroup("Account Related Settings",accountOptions,"blue",`${apkIcons}/myprofile_account.png`)}
       </main>
     </div>
   );

@@ -19,7 +19,8 @@ The following routes were present in the correct repository before this reconstr
 
 | Route | Web page purpose | APK visual evidence |
 |---|---|---|
-| `/` | Local demo login / welcome | Partial authentication-related strings only; no supplied screenshot |
+| `/` | Local demo MPIN login / welcome | MPIN/login strings and pre-login avatar resource; no supplied screenshot |
+| `/registration` | Text-evidence New User registration steps | Five-step flow recovered from APK help text; no supplied screenshot; visual-only local reference |
 | `/dashboard` | Main dashboard | Dashboard screenshot |
 | `/all-accounts` | Account list | Not directly screenshotted |
 | `/account-statement` | Statement date/account selection | Not directly screenshotted |
@@ -45,7 +46,7 @@ The following routes were present in the correct repository before this reconstr
 | `/contact-us` | Local contact information view | Not directly screenshotted |
 | `/faq` | Help/FAQ | Not directly screenshotted |
 
-**Web route count: 25.** Dynamic parameter routes are counted as one route template each.
+**Web route count: 26.** Dynamic parameter routes are counted as one route template each.
 
 ### Invest and Government Schemes detail verified in this step
 
@@ -72,3 +73,14 @@ The six still screenshots do not provide enough evidence to claim exact reconstr
 - Animated page transitions.
 
 Some corresponding web flows already exist. They remain subject to source-evidence limitations and are treated as local demonstrations if they resemble banking actions.
+
+## Mapping update — 2026-11-04
+
+- The splash now uses the exact extracted PNB ONE 4.43 full-screen resource.
+- Dashboard Instant Action and bottom-bar icons use the screenshot-matched APK assets.
+- The Services Pay & Transfer section now uses the source category artwork and ten visually matched numbered glyphs; four tile glyphs remain unassigned.
+- Send Money now uses the nine exact named APK icons.
+- Profile Settings now uses the extracted group-header artwork and only the individually matched tile glyphs.
+- `/registration` is a text-evidence reconstruction of the five-step NEW USER flow. It is not screenshot-identical because no registration screenshot was supplied.
+- The root MPIN login uses the extracted pre-login welcome avatar. No original MPIN screenshot was supplied, so its complete visual layout remains partially mapped.
+- See `PNB-ONE-4.43-MAPPING-IMPLEMENTATION.md` for the exact mappings and unresolved items.

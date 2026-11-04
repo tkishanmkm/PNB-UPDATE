@@ -4,6 +4,7 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Carousel, CarouselContent, CarouselItem } from "@/components/ui/carousel";
@@ -326,13 +327,13 @@ function DashboardPageComponent() {
               </div>
               <div className="grid grid-cols-2 gap-2">
                 {[
-                  { label: "Send Money", href: "/fund-transfer", icon: Send, tone: "amber" },
-                  { label: "UPI", href: "#", icon: UPIIcon, tone: "green" },
-                  { label: "Bills & Recharge", href: "#", icon: BillPayIcon, tone: "rose" },
-                  { label: "Open FD/RD", href: "#", icon: Banknote, tone: "blue" }
+                  { label: "Send Money", href: "/fund-transfer", icon: Send, image: "/pnb-one-ui/apk-mapped/dashboard/icons_postloginmidsection_sendmoney.png", tone: "amber" },
+                  { label: "UPI", href: "#", icon: UPIIcon, image: "/pnb-one-ui/apk-mapped/dashboard/icons_postloginmidsection_upi.png", tone: "green" },
+                  { label: "Bills & Recharge", href: "#", icon: BillPayIcon, image: "/pnb-one-ui/apk-mapped/dashboard/icons_postloginmidsection_bills.png", tone: "rose" },
+                  { label: "Open FD/RD", href: "#", icon: Banknote, image: "/pnb-one-ui/apk-mapped/dashboard/icons_postloginmidsection_fdrd.png", tone: "blue" }
                 ].map((action) => {
                   const Icon = action.icon;
-                  const content = <><span><Icon className="h-7 w-7"/></span><span>{action.label}</span></>;
+                  const content = <><span>{action.image ? <Image src={action.image} alt="" width={34} height={34} unoptimized className="h-8 w-8 object-contain"/> : <Icon className="h-7 w-7"/>}</span><span>{action.label}</span></>;
                   return action.href === "#"
                     ? <div key={action.label} aria-disabled="true" className={"pnb-dashboard-action-tile pnb-dashboard-action-" + action.tone + " pnb-dashboard-action-disabled"}>{content}</div>
                     : <Link href={action.href} key={action.label} className={"pnb-dashboard-action-tile pnb-dashboard-action-" + action.tone}>{content}</Link>;

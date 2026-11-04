@@ -1,60 +1,44 @@
-﻿
 "use client";
 
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Home, Landmark, Repeat, ChevronRight, Globe2, Banknote, PiggyBank } from "lucide-react";
+import { ArrowLeft, Home, ChevronRight } from "lucide-react";
 import { RupeeIcon } from "@/components/rupee-icon";
 import { LocalDemoNotice } from "@/components/local-demo-notice";
 
-const TransferFundsIcon = () => (
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.72" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-        <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.72-1.72" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-    </svg>
-);
-
-const QuickTransferIcon = () => (
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M15 4.5l-4-4L7 4.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-        <path d="M11 0.5V11" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-        <path d="M5 10.5v8a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-        <path d="M12 15.5h.01" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-    </svg>
-);
-
+const apkSendMoney = "/pnb-one-ui/apk-mapped/send-money";
 
 const transferOptions = [
     {
-        icon: TransferFundsIcon,
+        title: "Self (Own Account)",
+        description: "Transfer between your own PNB accounts",
+        href: "#",
+        id: "self-transfer",
+        image: `${apkSendMoney}/icons_sendmoney_self.png`,
+    },
+    {
         title: "Payee (Added)",
         description: "Send money to a saved beneficiary",
         href: "/fund-transfer/beneficiary",
-        id: "beneficiary-transfer"
+        id: "beneficiary-transfer",
+        image: `${apkSendMoney}/icons_sendmoney_payee.png`,
     },
     {
-        icon: QuickTransferIcon,
         title: "One Time (Bank)",
         description: "Send upto ",
         amount: "10,000",
         descriptionSuffix: " without adding beneficiary",
         href: "#",
-        id: "quick-transfer"
+        id: "quick-transfer",
+        image: `${apkSendMoney}/icons_sendmoney_onetime.png`,
     },
     {
-        icon: Landmark,
-        title: "Self (Own Account)",
-        description: "Transfer between your own PNB accounts",
-        href: "#",
-        id: "self-transfer"
-    },
-    {
-        icon: Repeat,
         title: "Send Money Nepal",
-        description: "Send money from India to Nepal, up to \u20B92 lakh per transaction.",
+        description: "Send money from India to Nepal, up to ₹2 lakh per transaction.",
         href: "#",
-        id: "indo-nepal"
+        id: "indo-nepal",
+        image: `${apkSendMoney}/icons_sendmoney_nepal.png`,
     },
 ];
 
@@ -79,7 +63,7 @@ export default function FundTransferPage() {
             className="pnb-send-money-tile group flex min-h-[132px] min-w-0 flex-col items-center justify-center gap-2 rounded-2xl border border-rose-100 bg-white px-1 py-4 text-center shadow-sm transition-colors hover:bg-rose-50 active:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-65"
         >
             <span className="grid h-[66px] w-[66px] place-items-center rounded-full bg-rose-50 text-primary shadow-sm transition-transform group-hover:-translate-y-0.5">
-                <item.icon className="h-8 w-8" strokeWidth={1.6} />
+                <Image src={item.image} alt="" width={52} height={52} unoptimized className="h-12 w-12 object-contain" />
             </span>
             <span className="line-clamp-2 text-[11px] font-bold leading-4 text-gray-800">{item.title}</span>
             {"amount" in item && (
@@ -112,7 +96,9 @@ export default function FundTransferPage() {
                     <div className="grid grid-cols-4 gap-1 sm:gap-2">
                         {primaryOptions.map(renderTransferTile)}
                         <div className="flex min-h-[122px] min-w-0 flex-col items-center justify-center gap-2 px-1 py-4 text-center opacity-80" aria-disabled="true">
-                            <span className="grid h-[66px] w-[66px] place-items-center rounded-full bg-rose-50 text-primary shadow-sm"><Image src="/pnb-one-ui/payment-logos/ic_upi_logo.svg" alt="" width={40} height={40} unoptimized/></span>
+                            <span className="grid h-[66px] w-[66px] place-items-center rounded-full bg-rose-50 text-primary shadow-sm">
+                                <Image src={`${apkSendMoney}/icons_sendmoney_upi.png`} alt="" width={52} height={52} unoptimized className="h-12 w-12 object-contain" />
+                            </span>
                             <span className="line-clamp-2 text-[11px] font-bold leading-4 text-gray-800">UPI (Payments)</span>
                         </div>
                     </div>
@@ -126,11 +112,11 @@ export default function FundTransferPage() {
                         </div>
                         <div className="flex w-full items-center gap-3 rounded-2xl border border-rose-100 bg-white p-4 text-left shadow-sm opacity-80" aria-disabled="true">
                             <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-sky-50 text-sky-700">
-                                <Globe2 className="h-6 w-6" strokeWidth={1.8}/>
+                                <Image src={`${apkSendMoney}/icons_sendmoney_outside.png`} alt="" width={42} height={42} unoptimized className="h-10 w-10 object-contain" />
                             </span>
                             <span className="min-w-0 flex-1">
                                 <span className="block text-sm font-bold text-gray-800">Send Money Outside India</span>
-                                <span className="mt-1 block text-xs leading-5 text-gray-500">Send up to USD 250,000 per financial year (April\u2013March) abroad.</span>
+                                <span className="mt-1 block text-xs leading-5 text-gray-500">Send up to USD 250,000 per financial year (April–March) abroad.</span>
                             </span>
                             <ChevronRight className="h-5 w-5 shrink-0 text-gray-400"/>
                         </div>
@@ -141,7 +127,7 @@ export default function FundTransferPage() {
                             className="flex w-full items-center gap-3 rounded-2xl border border-rose-100 bg-white p-4 text-left shadow-sm transition-colors hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-65"
                         >
                             <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-amber-50 text-amber-700">
-                                <internationalOption.icon className="h-6 w-6" strokeWidth={1.8} />
+                                <Image src={internationalOption.image} alt="" width={42} height={42} unoptimized className="h-10 w-10 object-contain" />
                             </span>
                             <span className="min-w-0 flex-1">
                                 <span className="block text-sm font-bold text-gray-800">{internationalOption.title}</span>
@@ -155,20 +141,19 @@ export default function FundTransferPage() {
                     <h2 className="px-1 text-sm font-bold text-gray-800">Others</h2>
                     <div className="grid grid-cols-3 gap-2">
                         {[
-                            { title: "Cardless Cash", Icon: Banknote, tone: "bg-rose-50 text-rose-700" },
-                            { title: "To Other Sukanya Samriddhi Account", Icon: PiggyBank, tone: "bg-amber-50 text-amber-700" },
-                            { title: "To PPF Account", Icon: Landmark, tone: "bg-emerald-50 text-emerald-700" }
-                        ].map(({title, Icon, tone}) => (
+                            { title: "Cardless Cash", image: `${apkSendMoney}/icons_sendmoney_cardless.png` },
+                            { title: "To Other Sukanya Samriddhi Account", image: `${apkSendMoney}/icons_sendmoney_tosukanya.png` },
+                            { title: "To PPF Account", image: `${apkSendMoney}/icons_sendmoney_toppf.png` }
+                        ].map(({title, image}) => (
                             <div key={title} className="flex min-h-[118px] min-w-0 flex-col items-center justify-center gap-2 rounded-2xl border border-rose-100 bg-white px-2 py-3 text-center shadow-sm opacity-80" aria-disabled="true">
-                                <span className={"grid h-12 w-12 place-items-center rounded-2xl " + tone}>
-                                    <Icon className="h-6 w-6" strokeWidth={1.8}/>
+                                <span className="grid h-12 w-12 place-items-center rounded-2xl bg-white">
+                                    <Image src={image} alt="" width={42} height={42} unoptimized className="h-10 w-10 object-contain" />
                                 </span>
                                 <span className="text-[10px] font-bold leading-4 text-gray-700">{title}</span>
                             </div>
                         ))}
                     </div>
                 </section>
-
             </main>
         </div>
     );

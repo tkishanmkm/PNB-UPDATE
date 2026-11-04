@@ -35,7 +35,8 @@ PNB ONE
 
 | Page / group | Route |
 |---|---|
-| Local login | `/` |
+| Local MPIN login | `/` |
+| New User registration steps (visual-only) | `/registration` |
 | Dashboard | `/dashboard` |
 | Account list | `/all-accounts` |
 | Account overview | `/my-account` |
@@ -62,7 +63,7 @@ PNB ONE
 | Contact | `/contact-us` |
 | FAQ | `/faq` |
 
-**Route-template count: 25.**
+**Route-template count: 26.**
 
 ## Navigation safety
 
@@ -75,3 +76,11 @@ PNB ONE
 ## Unknown destinations
 
 The screenshots and targeted Hermes functions do not establish every bottom-nav item or all service-tile destinations. Those are left outside the recovered navigation map instead of assigning speculative routes.
+
+## Registration and MPIN mapping update — 2026-11-04
+
+- `/` remains the local 4-digit MPIN login.
+- `/registration` is linked from the NEW USER entry and displays the APK-text-backed registration sequence only.
+- The registration preview is intentionally non-operational: no OTP/card/password inputs and no bank endpoint calls.
+- The MPIN login screen has source text/resource evidence but no supplied original screenshot; its complete visual layout is not claimed as exact.
+- See `PNB-ONE-4.43-MAPPING-IMPLEMENTATION.md` for evidence limits and icon mappings.
