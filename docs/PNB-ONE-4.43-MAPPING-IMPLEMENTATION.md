@@ -58,6 +58,6 @@
 - Only the PNB-UPDATE worktree is changed. No PNB-, Paxones/CleanP2P, BOB-NEW, Fino, or other project is included.
 ### Additional Services categories
 - Mapped the four remaining category header images from the extracted APK artwork: Manage Cards, Cheque Services, Tax Related and Others.
-- Added the extracted category labels and candidate child-service catalogue entries to the Services accordion. The labels are source-evidenced, but the full expanded-screen screenshots and exact item order are not available; this is a catalogue reconstruction, not a claim of pixel-identical original category pages.
+- Added the extracted category labels and candidate child-service catalogue entries to the Services accordion, including the six Cheque Services labels found in the APK help text. The labels are source-evidenced, but the full expanded-screen screenshots and exact item order are not available; this is a catalogue reconstruction, not a claim of pixel-identical original category pages.
 - Kept unresolved child tile glyphs as generic placeholders. Did not assign any of the 54 numbered serviceIcon_N files without a verified title crosswalk.
 - Preserved 17 matching named feature illustrations separately under service-page-illustrations/. These are page/feature artwork, not asserted to be the small menu tile glyphs.

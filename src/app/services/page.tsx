@@ -67,6 +67,7 @@ const serviceGroups: { title: string; icon: LucideIcon; iconImage?: string; item
   ]},
   { title: "Cheque Services", icon: FileText, iconImage: "/pnb-one-ui/apk-mapped/service-categories/icons_allservices_cheque.png", items: [
     { title: "Apply for Cheque Book", icon: CircleHelp, tone: "blue" },
+    { title: "Inquire Cheque Status", icon: CircleHelp, tone: "rose" },
     { title: "Positive Pay Service", icon: CircleHelp, tone: "green" },
     { title: "View/Stop Cheque", icon: CircleHelp, tone: "yellow" },
     { title: "Destroy Cheque", icon: CircleHelp, tone: "rose" },
