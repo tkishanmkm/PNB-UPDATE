@@ -3,8 +3,8 @@
 
 import React from 'react';
 import { useAppContext } from '@/hooks/use-app-store';
-import Image from 'next/image';
-import { isLocalImageSource } from '@/lib/local-image';
+import { PnbBrandImage } from "@/components/pnb-brand-image";
+
 
 const LoadingAnimation = () => (
     <div className="flex items-center justify-center space-x-2">
@@ -22,13 +22,12 @@ export const LoginLoadingScreen = () => {
     return (
         <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-background p-8">
             <div className="flex flex-col items-center justify-center text-center space-y-6">
-                 <Image
-                    src={isLocalImageSource(state.settings.appLogo) ? state.settings.appLogo : '/pnb-splash/pnb-logo.png'}
+                 <PnbBrandImage
+                    source={state.settings.appLogo}
                     width={150}
                     height={54}
                     alt="Punjab National Bank"
                     className="h-14 w-auto object-contain"
-                    unoptimized
                 />
                 <LoadingAnimation />
                 <p className="text-muted-foreground">Signing in...</p>
