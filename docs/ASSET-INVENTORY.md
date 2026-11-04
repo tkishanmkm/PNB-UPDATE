@@ -17,17 +17,17 @@ The 1,443 native image count is a resource count, not a count of unique app icon
 
 ## Existing app public assets
 
-At audit time the PNB-UPDATE repository contained **306 files** under `public/`:
+The initial PNB-UPDATE audit counted **306 files** under `public/`. This reconstruction step added 16 exact catalogue icons extracted from the APK's `drawable-mdpi` resources. The current directory therefore contains **322 files**:
 
-| File type | Count |
-|---|---:|
-| PNG | 294 |
-| SVG | 8 |
-| WebP | 1 |
-| MJS (PDF worker) | 1 |
-| ICO | 1 |
-| Web manifest | 1 |
-| **Total** | **306** |
+| File type | Initial audit | Current |
+|---|---:|---:|
+| PNG | 294 | 310 |
+| SVG | 8 | 8 |
+| WebP | 1 | 1 |
+| MJS (PDF worker) | 1 | 1 |
+| ICO | 1 | 1 |
+| Web manifest | 1 | 1 |
+| **Total** | **306** | **322** |
 
 Relevant directories:
 - `public/pnb-one-ui/` — extracted/curated PNB ONE icon, logo, payment-mark and screen art used by web components.
@@ -48,6 +48,31 @@ Relevant directories:
 The source extraction contains the native Android image-resource collection and the CCMS icons/images tree. The existing web app public directory retains the curated PNB logo, splash mark, bank wordmark, PCI-DSS mark, dashboard/payment/navigation and CCMS assets.
 
 An exact count of **unique logos** cannot be asserted from the extraction report because logo variants, density variants, language variants and duplicated copies are not deduplicated by semantic role. The source reports 18 CCMS icon files and 1,443 native image files; those are reproducible counts.
+
+## APK-backed catalogue icon reuse
+
+The exact native PNG resources below were copied from the decoded APK `res/drawable-mdpi` folder into `public/pnb-one-ui/apk-catalogue-icons/`. They are used by the screenshot-backed Invest and Government Schemes rows; no substitute Lucide icon is used for those category marks.
+
+| Web asset | APK drawable resource | Page row |
+|---|---|---|
+| `invest-open-fd.png` | `assets_resources_icons_invest_openfd.png` | Open Fixed Deposit |
+| `invest-open-flexi-rd.png` | `assets_resources_icons_invest_openflexird.png` | Catalogued source asset; retained for later supported FD/RD view work |
+| `invest-open-rd.png` | `assets_resources_icons_invest_openrd.png` | Open Recurring Deposit |
+| `invest-asba.png` | `assets_resources_icons_invest_asba.png` | Apply IPO/ASBA |
+| `invest-demat.png` | `assets_resources_icons_invest_demat.png` | Demat & Trading Account |
+| `invest-mutual-funds.png` | `assets_resources_icons_invest_mutualfunds.png` | Mutual Funds |
+| `invest-bank-products.png` | `assets_resources_icons_invest_apply_bank_product.png` | Invest / Apply Bank Products |
+| `invest-online.png` | `assets_resources_icons_invest_online.png` | Apply Online |
+| `invest-rbi-retail-direct.png` | `assets_resources_images_imagelists_retail.png` | RBI Retail Direct |
+| `scheme-apy.png` | `assets_resources_icons_govtschemes_apy.png` | Atal Pension Yojana |
+| `scheme-papl.png` | `assets_resources_icons_govtschemes_papl.png` | National Pension System (source asset; exact acronym expansion is not exposed by this screenshot/function subset) |
+| `scheme-pmjjby.png` | `assets_resources_icons_govtschemes_pmjjby.png` | Pradhan Mantri Jeevan Jyoti Bima Yojana |
+| `scheme-pmsby.png` | `assets_resources_icons_govtschemes_pmsby.png` | Pradhan Mantri Suraksha Bima Yojana |
+| `scheme-ppf.png` | `assets_resources_icons_govtschemes_ppf.png` | Public Provident Fund |
+| `scheme-scss.png` | `assets_resources_icons_govtschemes_scss.png` | Senior Citizens Savings Scheme |
+| `scheme-sukanya.png` | `assets_resources_icons_govtschemes_sukanya.png` | Sukanya Samriddhi Account |
+
+The APK string table and screenshot support the displayed row titles/descriptions. The app keeps these entries informational: there are no submit, redirect, account-linking or investment actions in this reconstruction.
 
 ## Fonts
 

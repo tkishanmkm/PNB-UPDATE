@@ -44,6 +44,7 @@ PNB ONE
 | Services | `/services` |
 | Government schemes | `/government-schemes` |
 | Invest | `/invest` |
+| Invest — FD/RD catalogue mode | `/invest?mode=fdrd_only` |
 | Statement date selection | `/account-statement` |
 | Statement view | `/statement` |
 | Statement analysis | `/statement/analysis` |

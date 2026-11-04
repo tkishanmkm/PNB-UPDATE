@@ -47,6 +47,13 @@ The following routes were present in the correct repository before this reconstr
 
 **Web route count: 25.** Dynamic parameter routes are counted as one route template each.
 
+### Invest and Government Schemes detail verified in this step
+
+- The APK Invest tile function lays out a horizontal row with a 62 × 62 leading icon box, Mukta title/description typography, and a trailing arrow control. The eight visible rows now use the corresponding exact APK image resources from `public/pnb-one-ui/apk-catalogue-icons/`.
+- The APK Invest header reads `pageParams.mode` and changes its title to **Open FD/RD** for `mode=fdrd_only`. The web page exposes this as `/invest?mode=fdrd_only` and filters the visible catalogue to the two screenshot-backed FD/RD rows. It does not add any FD/RD form or create a deposit.
+- Government Schemes and Invest remain non-operational catalogue pages. Their chevrons are visual reference elements only; no official external site, bank endpoint, application submission, or investment operation is invoked.
+- Government Schemes and Invest now use their extracted APK-native PNG artwork rather than generic Lucide approximations. The PPF description's visible range separator was corrected to an en dash.
+
 ## C. Other discovered but unverified surfaces
 
 The APK string table and targeted Hermes function extraction contain references to more UI concepts than the six screenshot references. The available extraction does not prove a complete one-to-one screen inventory for those strings. Therefore this audit does not invent a page for every string, button label, or extracted function.

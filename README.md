@@ -34,6 +34,7 @@ The main app is a React Native/Hermes HBC v96 bundle. Its original readable JSX/
 - Statement JSON export and whole-app JSON backup/restore (50 MB input limit).
 - Backup files exclude MPIN, TPIN, local login password, OTP and PDF password. Restoration preserves current device credentials and forces a fresh app login.
 - Locally stored payees, app settings and support-chat history.
+- Screenshot-backed Invest and Government Schemes catalogues use the exact extracted APK-native row icons. The APK's `fdrd_only` header mode is represented by `/invest?mode=fdrd_only`; this filters the catalogue only and does not open or submit a deposit request.
 - Local support responses based on data already saved in this browser.
 
 ## Start the application
