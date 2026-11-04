@@ -44,13 +44,11 @@ payment, OTP, or authentication service was added by the native wrapper.
 - Gradle debug build succeeded.
 - The APK installed successfully on the PNB_ONE_Preview_API35 Android emulator.
 - The app launcher activity started and was verified as the top-resumed activity.
-- A clean emulator screenshot is saved at:
+- The latest clean emulator screenshot, refreshed after the logo fix, is saved at:
   docs/reference-assets/pnb-update-android-emulator.png
-- The captured screen is the hosted PNB-UPDATE MPIN login page.
-- At capture time, the header image rendered its fallback text ("App Logo") rather than
-  the intended logo image. This is an observed hosted-web asset issue; it was not
-  changed by the native wrapper.
+- The captured screen is the hosted PNB-UPDATE MPIN login page with the PNB logo and welcome avatar visible.
+- The latest verified capture, after Render deployment b7d6b12, shows the bundled PNB logo and extracted welcome avatar loading correctly (both public asset URLs returned HTTP 200).
 
-This confirms the wrapper build, install and initial launch only. It does not certify
+Render deployment dep-dblcmhijnfac73fkaolg is live on commit b7d6b124142369f89757e7c3c2620d5672b80b52. The public logo and welcome-avatar image endpoints were checked and each returned HTTP 200. The refreshed Android emulator capture confirms the live page renders both images. This still does not certify every web route, upload, PDF download, or banking workflow on a physical device. It does not certify
 every web route, file-upload flow, PDF download, or banking workflow on a physical
 Android device.
