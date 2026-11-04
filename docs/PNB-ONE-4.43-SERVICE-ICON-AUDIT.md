@@ -205,15 +205,15 @@ A second contact sheet of named resource files is saved as:
 | 18 | Others | Services category; Other Services references in strings | allservices_other.png | B; category icon exists; complete child list not recovered |
 | 19 | Fund Transfer | Services - Pay and Transfer (visible tile) | serviceicon_1.png | A+B; direct visual match to supplied Services screenshot |
 | 20 | Bill Payment(s) | Services - Pay and Transfer (visible tile); AllSvc_BillPayment | serviceicon_2.png; named bill/recharge page illustrations remain separate | A+B; direct visual match to supplied Services screenshot |
-| 21 | Generate QR | Services - Pay and Transfer (visible tile); AllSvc_GenerateQR | No exact main Services tile glyph confirmed; QR SDK assets are not substituted | A+C/D; unresolved |
-| 22 | Approve to Pay | Services - Pay and Transfer (visible tile); AllSvc_ApproveToPay | No exact tile glyph confirmed | A+C/D; unresolved |
-| 23 | Pay to Mobile Number | Services - Pay and Transfer (visible tile); AllSvc_PayToMobileNumber | No exact tile glyph confirmed | A+C/D; unresolved |
+| 21 | Generate QR | Services - Pay and Transfer (visible tile); AllSvc_GenerateQR | service-generate-qr.png; cropped from the exact visible QR glyph in source screenshot 3.webp | A; screenshot-derived crop, not standalone APK resource |
+| 22 | Approve to Pay | Services - Pay and Transfer (visible tile); AllSvc_ApproveToPay | service-approve-to-pay.png; cropped from the exact visible rupee/check glyph in source screenshot 3.webp | A; screenshot-derived crop, not standalone APK resource |
+| 23 | Pay to Mobile Number | Services - Pay and Transfer (visible tile); AllSvc_PayToMobileNumber | service-pay-to-mobile.png; cropped from the exact visible rupee/arrow glyph in source screenshot 3.webp | A; screenshot-derived crop, not standalone APK resource |
 | 24 | Manage Beneficiary | Services - Pay and Transfer (visible tile); AllSvc_ManageBeneficiary | serviceicon_4.png | A+B; direct visual match to supplied Services screenshot |
 | 25 | Pay to Contact | Services - Pay and Transfer (visible tile); AllSvc_PayToContact | serviceicon_9.png | A+B; direct visual match to supplied Services screenshot |
 | 26 | Standing Instructions | Services - Pay and Transfer (visible tile); AllSvc_StandingInstructions | serviceicon_10.png | A+B; direct visual match to supplied Services screenshot |
 | 27 | My Transactions | Services - Pay and Transfer (visible tile); AllSvc_MyTransactions | serviceicon_8.png | A+B; direct visual match to supplied Services screenshot |
 | 28 | View/Generate MMID | Services - Pay and Transfer (visible, truncated label); AllSvc_ViewGenerateMMID | serviceicon_52.png | A+B; direct visual match to supplied Services screenshot |
-| 29 | Check IMPS Status | Services - Pay and Transfer (visible tile); AllSvc_CheckImpsStatus | No exact tile glyph confirmed | A+C/D; unresolved |
+| 29 | Check IMPS Status | Services - Pay and Transfer (visible tile); AllSvc_CheckImpsStatus | service-check-imps.png; cropped from the exact visible IMPS/check glyph in source screenshot 3.webp | A; screenshot-derived crop, not standalone APK resource |
 | 30 | PM Care | Services - Pay and Transfer (visible tile); AllSvc_PmCare | serviceicon_11.png | A+B; direct visual match to supplied Services screenshot |
 | 31 | Cardless Cash Withdrawal | Send Money - Others; AllSvc_CardlessCashWD | serviceicon_6.png for Services tile; sendmoney_cardless.png for Send Money section | A+B; screenshot match and exact named Send Money asset |
 | 32 | Manage Debit Cards | Services/cards management text and navigation references | prelogin_managedebitcard.png; debit-card illustrations and curated navigation manage_card.png | B; exact menu tile binding not screenshot-backed |
@@ -269,7 +269,7 @@ A second contact sheet of named resource files is saved as:
 5. Full modal/flow details and exact navigation destinations for every tile.
 6. Pixel dimensions, colors and source assets for every individual action tile. The existing six screenshots do not cover those details.
 
-The main obstacle is not simply that the images are missing: the image files are present, but the dynamic Services data mapping is not included in the saved targeted decompilation. More filesystem searching cannot safely turn an unlabelled serviceIcon_N into a named service. The next evidence needed for a complete crosswalk would be either the missing runtime/service configuration data or screenshots of each expanded category and its pages (including the icon labels).
+The main obstacle is not simply that the images are missing: the dynamic Services data mapping is not included in the saved targeted decompilation. The four glyphs visible in the supplied Services screenshot are now mapped from screenshot crops. More filesystem searching cannot safely turn an unlabelled serviceIcon_N into a named service. The next evidence needed for a complete crosswalk would be either the missing runtime/service configuration data or screenshots of each expanded category and its pages (including the icon labels).
 
 ## 8. Scope and safety
 
@@ -312,7 +312,7 @@ The Pay & Transfer group header uses the separately named `allservices_pay.png` 
 ### Remaining unknowns
 
 - 38 of the 54 numbered glyphs have not been assigned to a title and are not used by PNB-UPDATE.
-- Four screenshot-visible Pay & Transfer tiles remain unmapped: Generate QR, Approve to Pay, Pay to Mobile Number, and Check IMPS Status.
+- The four remaining Pay & Transfer screenshot glyphs are now applied using direct crops from screenshot 3.webp; they are not misrepresented as standalone extracted APK resources.
 - Profile tile mappings not listed above remain unchanged.
 - Named page illustrations are not substituted for small menu glyphs merely because their filenames are similar.
 - The Cards, Cheque, Tax Related and Others category icons exist, but their expanded runtime screens were not supplied. No expanded item tree is inferred from category art alone.

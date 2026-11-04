@@ -47,8 +47,8 @@
 
 ## Still unresolved — deliberately not guessed
 
-- The APK has 54 numbered `serviceIcon_1…serviceIcon_54` resources. Sixteen distinct numbered glyphs are now used in the Services/Profile mappings above; the remaining numbered glyphs have no proven title-to-icon crosswalk in the supplied screenshot/function extraction.
-- Four visible Pay & Transfer tiles remain unmapped: Generate QR, Approve to Pay, Pay to Mobile Number, and Check IMPS Status.
+- The APK has 54 numbered `serviceIcon_1…serviceIcon_54` resources. Sixteen distinct numbered glyphs are used in the Services/Profile mappings above. The remaining numbered glyphs have no proven title-to-icon crosswalk; the four previously missing visible tile glyphs were cropped directly from the original Services screenshot instead.
+- No Pay & Transfer tile visible in the supplied Services screenshot remains without a matching visual. The four screenshot-cropped glyphs are documented separately from standalone APK assets.
 - Several Profile Settings tile icons remain unresolved, including Change MPIN, Set/Reset TPIN, De-activation, Set Account Nickname, Promotional Content Preference, Modify Account Access, Set Limits, Quick View Balance, My Account, All Accounts, Contact Us, and App Settings.
 - Cards, Cheque, Tax Related, and Others category artwork exists in the APK, but their expanded page screenshots were not supplied. Their category icons are not substituted into unverified sections.
 - Only six original screens are screenshot-backed: Dashboard, Services, Profile Settings, Government Schemes, Invest, and Send Money. The main registration flow is text-backed; the MPIN login is string/resource-backed but has no supplied screenshot. Other web routes are not claimed to be exact APK screen reconstructions.
