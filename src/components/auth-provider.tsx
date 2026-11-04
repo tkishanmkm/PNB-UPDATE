@@ -48,7 +48,7 @@ const AppInitializer: React.FC<{ children: React.ReactNode }> = ({ children }) =
               router.replace('/dashboard');
            }
         } else {
-          if (pathname !== '/') {
+          if (pathname !== '/' && pathname !== '/registration') {
             router.replace('/');
           }
         }
@@ -59,7 +59,7 @@ const AppInitializer: React.FC<{ children: React.ReactNode }> = ({ children }) =
     return () => clearTimeout(timer);
   // The dependency array is carefully chosen to handle these state transitions.
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [state.isStateInitialized, state.loginPending, state.isLoggingOut]);
+  }, [state.isStateInitialized, state.loginPending, state.isLoggingOut, pathname]);
 
 
   // Determine what to render based on the current status
@@ -75,7 +75,7 @@ const AppInitializer: React.FC<{ children: React.ReactNode }> = ({ children }) =
     if (state.isAuthenticated && pathname !== '/') {
       return <>{children}</>;
     }
-    if (!state.isAuthenticated && pathname === '/') {
+    if (!state.isAuthenticated && (pathname === '/' || pathname === '/registration')) {
       return <>{children}</>;
     }
   }
