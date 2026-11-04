@@ -11,7 +11,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import type { Payee, Transaction, CarouselBanner, AppSettings, IconAssets, ChatMessage, AccountDetails } from '@/lib/types';
-import { extractStatementDetailsFromPdf, extractTransactionsFromPdf, type ExtractedStatementDetails } from '@/ai/flows/extract-transactions-from-pdf';
+import { extractStatementDetailsFromPdf, extractTransactionsFromPdf, type ExtractedStatementDetails } from '@/lib/statement-pdf-import';
+import { createStatementTransactionId, planStatementAppend, validateStatementReplacement } from '@/lib/statement-import';
 import { Trash2, Edit, ArrowLeft, Home } from 'lucide-react';
 import Link from 'next/link';
 import { Textarea } from '@/components/ui/textarea';
@@ -23,6 +24,8 @@ import { defaultState } from '@/lib/mock-data';
 import { createStatementJsonExport, normalizeStatementJson } from '@/lib/statement-json';
 import { normalizeAppBackup } from '@/lib/backup-state';
 import { getActiveAccount } from '@/lib/accounts';
+import { isLocalImageSource } from '@/lib/local-image';
+import Image from 'next/image';
 
 const normalizeImageDataUrls = (value: unknown): unknown => {
     if (typeof value === 'string') {
@@ -426,7 +429,7 @@ const AssetSettings = () => {
     };
 
     const handleAddBanner = () => {
-        setBanners([...banners, {src: 'https://placehold.co/600x300.png', alt: 'New Promotion', hint: 'finance promotion'}]);
+        setBanners([...banners, {src: '', alt: 'Local banner (upload image to set artwork)', hint: 'local image required'}]);
     }
 
     const handleRemoveBanner = (index: number) => {
@@ -461,23 +464,23 @@ const AssetSettings = () => {
             <h3 className="font-semibold pt-4">Splash Screen — PNB ONE App Logo</h3>
             <p className="text-xs text-muted-foreground">Upload the central PNB ONE logo. It is saved in app state and included in JSON exports.</p>
             <Input type="file" accept="image/*" onChange={(e) => handleFileChange(e, (dataUrl) => handleSettingsChange('pnbOneLogo', dataUrl))} />
-            {state.settings.pnbOneLogo && <img src={state.settings.pnbOneLogo} alt="PNB ONE splash logo preview" className="h-20 w-20 object-contain rounded border p-1" />}
+            {isLocalImageSource(state.settings.pnbOneLogo) && <Image src={state.settings.pnbOneLogo} alt="PNB ONE splash logo preview" width={80} height={80} unoptimized className="h-20 w-20 object-contain rounded border p-1" />}
 
             <h3 className="font-semibold pt-4">Splash Screen — #JustOneApp Artwork</h3>
             <Input type="file" accept="image/png,image/*" onChange={(e) => handleFileChange(e, (dataUrl) => handleSettingsChange('splashJustOneAppAsset', dataUrl))} />
-            {state.settings.splashJustOneAppAsset && <img src={state.settings.splashJustOneAppAsset} alt="#JustOneApp splash artwork preview" className="max-h-16 max-w-full object-contain rounded border p-1" />}
+            {isLocalImageSource(state.settings.splashJustOneAppAsset) && <Image src={state.settings.splashJustOneAppAsset} alt="#JustOneApp splash artwork preview" width={240} height={80} unoptimized className="max-h-16 max-w-full object-contain rounded border p-1" />}
 
             <h3 className="font-semibold pt-4">Splash Screen — PNB Logo</h3>
             <Input type="file" accept="image/png,image/*" onChange={(e) => handleFileChange(e, (dataUrl) => handleSettingsChange('splashPnbLogoAsset', dataUrl))} />
-            {state.settings.splashPnbLogoAsset && <img src={state.settings.splashPnbLogoAsset} alt="PNB splash logo preview" className="h-16 w-28 object-contain rounded border p-1" />}
+            {isLocalImageSource(state.settings.splashPnbLogoAsset) && <Image src={state.settings.splashPnbLogoAsset} alt="PNB splash logo preview" width={112} height={64} unoptimized className="h-16 w-28 object-contain rounded border p-1" />}
 
             <h3 className="font-semibold pt-4">Splash Screen — Punjab National Bank Wordmark</h3>
             <Input type="file" accept="image/png,image/*" onChange={(e) => handleFileChange(e, (dataUrl) => handleSettingsChange('splashBankWordmarkAsset', dataUrl))} />
-            {state.settings.splashBankWordmarkAsset && <img src={state.settings.splashBankWordmarkAsset} alt="Punjab National Bank wordmark preview" className="max-h-12 max-w-full object-contain rounded border p-1" />}
+            {isLocalImageSource(state.settings.splashBankWordmarkAsset) && <Image src={state.settings.splashBankWordmarkAsset} alt="Punjab National Bank wordmark preview" width={300} height={48} unoptimized className="max-h-12 max-w-full object-contain rounded border p-1" />}
 
             <h3 className="font-semibold pt-4">Splash Screen — PCI DSS Mark</h3>
             <Input type="file" accept="image/png,image/*" onChange={(e) => handleFileChange(e, (dataUrl) => handleSettingsChange('splashPciDssAsset', dataUrl))} />
-            {state.settings.splashPciDssAsset && <img src={state.settings.splashPciDssAsset} alt="PCI DSS splash mark preview" className="h-16 w-28 object-contain rounded border p-1" />}
+            {isLocalImageSource(state.settings.splashPciDssAsset) && <Image src={state.settings.splashPciDssAsset} alt="PCI DSS splash mark preview" width={112} height={64} unoptimized className="h-16 w-28 object-contain rounded border p-1" />}
 
             <h3 className="font-semibold pt-4">Legacy Splash Screen Banner (PNB)</h3>
             <Input type="file" accept="image/*" onChange={(e) => handleFileChange(e, (dataUrl) => handleSettingsChange('pnbBanner', dataUrl))} />
@@ -746,18 +749,24 @@ const DataManagement = () => {
                 state.settings.splashBankWordmarkAsset || loadLocalAsset('/pnb-splash/punjab-national-bank.png'),
                 state.settings.splashPciDssAsset || loadLocalAsset('/pnb-splash/pcidss.png'),
             ]);
+            const safeUser = Object.fromEntries(
+                Object.entries(state.user).filter(([key]) => key !== 'mpin' && key !== 'tpin'),
+            );
+            const safeSettings = Object.fromEntries(
+                Object.entries(state.settings).filter(([key]) =>
+                    !['pdfPassword', 'loginPassword', 'demoLoginOtp'].includes(key),
+                ),
+            );
             const stateToExport = JSON.parse(JSON.stringify({
                 ...state,
+                user: safeUser,
                 settings: {
-                    ...state.settings,
+                    ...safeSettings,
                     splashJustOneAppAsset: justOneAppAsset,
                     splashPnbLogoAsset: pnbLogoAsset,
                     splashBankWordmarkAsset: bankWordmarkAsset,
                     splashPciDssAsset: pciDssAsset,
                 },
-                // This app's demo backup intentionally includes PINs so the same demo
-                // credentials continue to work after restoring the backup.
-                user: { ...state.user, mpin: state.user.mpin, tpin: state.user.tpin },
                 isAuthenticated: false,
                 loginPending: false,
                 isLoggingOut: false,
@@ -772,7 +781,7 @@ const DataManagement = () => {
             a.click();
             a.remove();
             window.setTimeout(() => URL.revokeObjectURL(url), 1000);
-            toast({ title: "Success", description: "Full backup exported, including the splash screen and all logo artwork. Keep this JSON file private because it contains your demo PINs." });
+            toast({ title: "Success", description: "Full local-data backup exported with splash artwork. MPIN, TPIN, local passwords, OTPs and PDF passwords are excluded; sign in again after restoring." });
         } catch (error) {
             console.error("Export error:", error);
             toast({ variant: 'destructive', title: "Error", description: "Failed to export state and splash assets." });
@@ -804,6 +813,9 @@ const DataManagement = () => {
                     const importedState = normalizeAppBackup(normalizedParsedState, defaultState, {
                         mpin: state.user.mpin,
                         tpin: state.user.tpin,
+                        pdfPassword: state.settings.pdfPassword,
+                        loginPassword: state.settings.loginPassword,
+                        demoLoginOtp: state.settings.demoLoginOtp,
                     });
 
                     // Persist the validated, normalized full app state before reporting success.
@@ -962,9 +974,9 @@ const IconAssetsSettings = () => {
                 {iconFields.map(({ key, label }) => (
                     <div key={key} className="space-y-1 border p-3 rounded-md">
                         <Label htmlFor={key}>{label}</Label>
-                        {iconAssets[key] && (
+                        {isLocalImageSource(iconAssets[key]) && (
                              <div className="flex items-center gap-2">
-                                <img src={iconAssets[key]} alt={`${label} preview`} className="w-8 h-8 object-contain border rounded-md" />
+                                <Image src={iconAssets[key]} alt={`${label} preview`} width={32} height={32} unoptimized className="w-8 h-8 object-contain border rounded-md" />
                                 <Button size="sm" variant="destructive" onClick={() => handleRemoveIcon(key)}>Remove</Button>
                             </div>
                         )}
@@ -1030,30 +1042,48 @@ const PdfExtraction = () => {
                     const details = await extractStatementDetailsFromPdf(pdfBytes);
                     const results = await extractTransactionsFromPdf(pdfBytes);
                     const accountNumber = details.accountNumber;
-                    const destinationAccountId = accountNumber ? 'statement-' + accountNumber.replace(/\D/g, '') : 'statement-import';
+                    const normalizedAccountNumber = normalizeAccountNumber(accountNumber);
+                    const matchedAccountId = findMatchingAccountId(accountNumber);
+                    const destinationAccountId = matchedAccountId || (normalizedAccountNumber ? 'statement-' + normalizedAccountNumber : 'statement-import');
+                    const occurrences = new Map<string, number>();
                     setStatementDetails(details);
                     setHasPreview(true);
-                    setCanSavePreview(Boolean(accountNumber));
+                    setCanSavePreview(Boolean(normalizedAccountNumber));
                     setStatementAccountId(destinationAccountId);
-                    // Keep every parsed row, including repeated payments. Saving replaces the old dataset.
-                    const statementTransactions = results.map((transaction, index) => ({
-                        ...transaction,
-                        id: 'statement-' + index + '-' + transaction.date.slice(0, 10),
-                        accountId: destinationAccountId,
-                    }));
+                    // IDs are content-derived and stable across repeated imports. Identical
+                    // repeated rows receive occurrence suffixes instead of being collapsed.
+                    const statementTransactions = results.map(transaction => {
+                        const fingerprint = [
+                            transaction.date,
+                            transaction.type,
+                            Math.round(Math.abs(transaction.amount) * 100),
+                            transaction.description,
+                            transaction.reference || '',
+                            transaction.instrumentId || '',
+                            transaction.remarks || '',
+                        ].join('|');
+                        const occurrence = (occurrences.get(fingerprint) || 0) + 1;
+                        occurrences.set(fingerprint, occurrence);
+                        return {
+                            ...transaction,
+                            id: createStatementTransactionId(normalizedAccountNumber, transaction, occurrence),
+                            accountId: destinationAccountId,
+                        };
+                    });
                     setStatementAccountNumber(accountNumber);
                     setPreviewData(statementTransactions);
                     setIsExtracting(false);
                     toast({
                         title: 'Extraction Complete',
-                        description: accountNumber
-                            ? 'Extracted ' + statementTransactions.length + ' transactions. Saving replaces the old account and transaction data.'
-                            : 'Transactions extracted, but no account number was found. Saving is blocked to avoid an unidentified account.',
+                        description: normalizedAccountNumber
+                            ? 'Extracted ' + statementTransactions.length + ' transaction rows from this PDF locally. Choose one of the three import operations after reviewing the preview.'
+                            : 'Transactions extracted, but no account number was found. Export is available; saving is blocked to prevent account mixing.',
                     });
                 } catch (error) {
                     console.error("Failed to extract transactions from PDF:", error);
                     setIsExtracting(false);
-                    toast({ variant: 'destructive', title: "Error", description: "Failed to extract transactions." });
+                    const message = error instanceof Error ? error.message : 'PDF text extraction failed.';
+                    toast({ variant: 'destructive', title: "PDF extraction failed", description: message });
                 }
             };
             reader.onerror = () => {
@@ -1067,60 +1097,103 @@ const PdfExtraction = () => {
         }
     };
 
-    const handleSavePreview = async () => {
+    const handleSavePreview = (mode: 'app' | 'transactions' | 'append') => {
         const accountNumber = normalizeAccountNumber(statementAccountNumber);
         if (!hasPreview) {
-            toast({ variant: 'destructive', title: 'No statement preview', description: 'Extract a PDF or import a statement JSON file before replacing app data.' });
-            return;
-        }
-        if (!canSavePreview) {
-            toast({ variant: 'destructive', title: 'Account mismatch', description: 'This JSON statement does not match an account saved in the app. Existing data was not changed.' });
+            toast({ variant: 'destructive', title: 'No statement preview', description: 'Extract a digital PDF statement or import a statement JSON file first.' });
             return;
         }
         if (!accountNumber) {
-            toast({ variant: 'destructive', title: 'Account number not found', description: 'The statement must contain an identifiable account number before replacing app data.' });
+            toast({ variant: 'destructive', title: 'Account number not found', description: 'An identifiable account number is required before statement records can be saved.' });
             return;
         }
-        const template = state.accounts.find(item => normalizeAccountNumber(item.accountNumber) === accountNumber) || getActiveAccount(state);
-        if (!template) {
-            toast({ variant: 'destructive', title: 'Cannot save statement', description: 'The app account template is missing.' });
+
+        const matchedAccount = state.accounts.find(item =>
+            normalizeAccountNumber(item.accountNumber) === accountNumber,
+        );
+        if (mode !== 'app' && !matchedAccount) {
+            toast({ variant: 'destructive', title: 'No matching saved account', description: 'Replace Transactions Only and Save Transactions require an existing account with the same full account number. Replace App Data remains available.' });
             return;
         }
+
         const details = statementDetails;
-        const accountId = statementAccountId || ('statement-' + accountNumber);
-        const account: AccountDetails = {
-            ...template,
-            id: accountId,
-            userId: state.user.id || accountId,
-            accountNumber,
-            type: details?.accountType || template.type,
-            balance: details?.closingBalance ?? template.balance,
-            accountHolder: details?.accountHolder || template.accountHolder || '',
-            customerAddress: details?.customerAddress || template.customerAddress || '',
-            customerCity: details?.customerCity || template.customerCity || '',
-            customerPin: details?.customerPin || template.customerPin || '',
-            branchName: details?.branchName || template.branchName || '',
-            branchAddress: details?.branchAddress || template.branchAddress || '',
-            branchCity: details?.branchCity || template.branchCity || '',
-            branchPin: details?.branchPin || template.branchPin || '',
-            ifsc: details?.ifsc || template.ifsc || '',
-            micrCode: details?.micrCode || template.micrCode || '',
-            customerId: details?.customerId || template.customerId || '',
-            ckycNumber: details?.ckycNumber || template.ckycNumber || '',
-            nominee: details?.nominee || template.nominee || '',
-            averageQuarterlyBalance: template.averageQuarterlyBalance,
-            upiId: template.upiId,
-            status: template.status,
-            currencySymbol: template.currencySymbol || state.settings.currencySymbol,
-        };
-        const replacementTransactions = previewData.map((tx, index) => ({
-            ...tx,
-            id: 'statement-' + accountNumber + '-' + index + '-' + tx.date.slice(0, 10),
+        const accountId = matchedAccount?.id || statementAccountId || ('statement-' + accountNumber);
+        const importedTransactions = previewData.map(transaction => ({
+            ...transaction,
             accountId,
         }));
-        dispatch({ type: 'REPLACE_STATEMENT_DATA', payload: { account, transactions: replacementTransactions } });
+
+        try {
+            if (mode === 'app') {
+                const latestSourceBalance = [...previewData]
+                    .filter(transaction => typeof transaction.balanceAfter === 'number' && Number.isFinite(transaction.balanceAfter))
+                    .sort((left, right) => right.date.localeCompare(left.date))[0]?.balanceAfter;
+                const template = matchedAccount;
+                const account: AccountDetails = {
+                    id: accountId,
+                    userId: state.user.id || accountId,
+                    accountNumber,
+                    type: details?.accountType || template?.type || 'Savings',
+                    balance: details?.closingBalance ?? latestSourceBalance ?? template?.balance ?? 0,
+                    currencySymbol: template?.currencySymbol || state.settings.currencySymbol || '₹',
+                    accountHolder: details?.accountHolder || template?.accountHolder || '',
+                    customerAddress: details?.customerAddress || template?.customerAddress || '',
+                    customerCity: details?.customerCity || template?.customerCity || '',
+                    customerPin: details?.customerPin || template?.customerPin || '',
+                    branchName: details?.branchName || template?.branchName || '',
+                    branchAddress: details?.branchAddress || template?.branchAddress || '',
+                    branchCity: details?.branchCity || template?.branchCity || '',
+                    branchPin: details?.branchPin || template?.branchPin || '',
+                    ifsc: details?.ifsc || template?.ifsc || '',
+                    micrCode: details?.micrCode || template?.micrCode || '',
+                    customerId: details?.customerId || template?.customerId || '',
+                    ckycNumber: details?.ckycNumber || template?.ckycNumber || '',
+                    nominee: details?.nominee || template?.nominee || '',
+                    ...(template?.averageQuarterlyBalance !== undefined
+                        ? { averageQuarterlyBalance: template.averageQuarterlyBalance }
+                        : {}),
+                    ...(template?.upiId ? { upiId: template.upiId } : {}),
+                    ...(template?.status ? { status: template.status } : {}),
+                };
+                const replacementTransactions = validateStatementReplacement(importedTransactions, accountId);
+                const accepted = window.confirm(
+                    'Replace App Data will replace all saved accounts and transactions with the statement account and its transactions. Payees, support history, app appearance, settings and local login credentials will be preserved. Continue?',
+                );
+                if (!accepted) return;
+                dispatch({ type: 'REPLACE_APP_DATA', payload: { account, transactions: replacementTransactions } });
+                toast({
+                    title: 'Statement app data replaced',
+                    description: `Saved ${replacementTransactions.length} transaction(s) for account ending ${accountNumber.slice(-4)}. Other accounts and transactions were replaced; payees, support history and appearance settings were kept.`,
+                });
+            } else if (mode === 'transactions') {
+                const replacementTransactions = validateStatementReplacement(importedTransactions, accountId);
+                dispatch({ type: 'REPLACE_TRANSACTIONS_ONLY', payload: { accountId, transactions: replacementTransactions } });
+                toast({
+                    title: 'Transactions replaced',
+                    description: `Replaced ${replacementTransactions.length} transaction(s) for the matched account. Account details, balances, other accounts, payees and settings were not changed.`,
+                });
+            } else {
+                const plan = planStatementAppend(state.transactions, importedTransactions, accountId);
+                if (plan.added.length) {
+                    dispatch({ type: 'SAVE_TRANSACTIONS', payload: { accountId, transactions: importedTransactions } });
+                }
+                toast({
+                    title: plan.added.length ? 'Transactions saved' : 'No new transactions',
+                    description: `Added ${plan.added.length} transaction(s); skipped ${plan.skipped} exact duplicate(s). Existing account details and balances were not changed.`,
+                });
+                if (!plan.added.length) return;
+            }
+        } catch (error) {
+            toast({
+                variant: 'destructive',
+                title: 'Statement import rejected',
+                description: error instanceof Error ? error.message : 'The imported records failed validation. No data was changed.',
+            });
+            return;
+        }
+
         const missing: string[] = [];
-        if (details) {
+        if (mode === 'app' && details) {
             if (!details.accountHolder) missing.push('customer name');
             if (!details.customerAddress) missing.push('customer address');
             if (!details.customerPin) missing.push('customer PIN');
@@ -1128,10 +1201,12 @@ const PdfExtraction = () => {
             if (!details.branchAddress) missing.push('branch address');
             if (details.closingBalance === null || details.closingBalance === undefined) missing.push('closing balance');
         }
-        toast({
-            title: 'Statement data replaced',
-            description: replacementTransactions.length + ' transactions saved. Previous accounts and transactions were replaced. App logo and banner settings were preserved.' + (missing.length ? ' Could not detect: ' + missing.join(', ') + '. Please verify these fields in the PDF.' : ''),
-        });
+        if (missing.length) {
+            toast({
+                title: 'Some account fields were not present in the statement',
+                description: 'Verify these fields in Account Settings: ' + missing.join(', ') + '.',
+            });
+        }
         setPreviewData([]);
         setHasPreview(false);
         setCanSavePreview(false);
@@ -1166,17 +1241,23 @@ const PdfExtraction = () => {
             try {
                 const data: unknown = JSON.parse(String(event.target?.result || ''));
                 const preview = normalizeStatementJson(data, findMatchingAccountId);
+                const destinationAccountId = preview.accountId || (preview.accountNumber ? 'statement-' + preview.accountNumber : null);
                 setStatementAccountNumber(preview.accountNumber);
-                setStatementAccountId(preview.accountId);
+                setStatementAccountId(destinationAccountId);
                 setCanSavePreview(preview.canSave);
                 setHasPreview(true);
                 setStatementDetails(preview.statementDetails);
-                setPreviewData(preview.transactions);
+                setPreviewData(preview.transactions.map(transaction => ({
+                    ...transaction,
+                    accountId: destinationAccountId || 'unmatched',
+                })));
                 toast({
                     title: "Import Ready",
-                    description: preview.canSave
-                        ? "The JSON account matches a saved account. Review the statement details and transactions before saving."
-                        : "Preview only: the JSON account does not match a saved account, so replacing app data is blocked.",
+                    description: preview.accountId
+                        ? "The JSON account matches a saved account. All three import operations are available after review."
+                        : preview.canSave
+                            ? "The JSON identifies a new account. Replace App Data is available; transaction-only replacement and append require an existing account match."
+                            : "The statement has no full account number. It can be reviewed and exported, but not saved.",
                 });
             } catch (error) {
                 const message = error instanceof Error ? error.message : "Invalid JSON format.";
@@ -1191,17 +1272,19 @@ const PdfExtraction = () => {
         <CardContent className="space-y-4 pt-4">
             <div className="space-y-2">
                 <Label htmlFor="pdf-upload">Upload PDF Bank Statement</Label>
-                <Input id="pdf-upload" type="file" accept=".pdf" onChange={handleFileChange} />
+                <Input id="pdf-upload" type="file" accept=".pdf,application/pdf" onChange={handleFileChange} />
+                <p className="text-xs text-muted-foreground">Text is extracted locally in this browser with PDF.js. No AI or OCR is used. Scanned/image-only PDFs are unsupported.</p>
                 <Button onClick={handleExtract} disabled={!file || isExtracting} className="w-full">
-                    {isExtracting ? 'Extracting...' : 'Extract Transactions'}
+                    {isExtracting ? 'Extracting...' : 'Extract Statement Text'}
                 </Button>
             </div>
             {hasPreview && (
                 <div className="space-y-2 mt-4">
                     <div className="rounded border p-3 text-sm">
-                        <p className="text-muted-foreground">Saving will replace all saved account and transaction data with this statement. App logo, banner, and appearance settings will be preserved.</p>
+                        <p className="font-semibold">Review before importing</p>
+                        <p className="text-muted-foreground">Replace App Data replaces every saved account and transaction with this statement account and its transactions. Payees, support history, local settings, branding and device credentials remain in place.</p>
                         {statementAccountNumber && <p className="text-muted-foreground mt-1">Statement account ending in {normalizeAccountNumber(statementAccountNumber).slice(-4)}.</p>}
-                        {!canSavePreview && <p className="mt-2 text-xs font-medium text-amber-700">This imported JSON account does not match a saved account. Replacing app data is disabled to protect your existing records.</p>}
+                        {canSavePreview && !state.accounts.some(account => normalizeAccountNumber(account.accountNumber) === normalizeAccountNumber(statementAccountNumber)) && <p className="mt-2 text-xs font-medium text-amber-700">This account is not saved yet. Replace App Data can create it from statement-supported details. Transaction-only replacement and append require a matching saved account.</p>}
                         {!statementAccountNumber && <p className="mt-2 text-xs font-medium text-amber-700">No account number was detected. You can export this preview, but cannot replace app data.</p>}
                         {statementDetails?.accountHolder && <p>Account holder: {statementDetails.accountHolder}</p>}
                         {statementDetails?.customerAddress && <p>Address: {statementDetails.customerAddress}</p>}
@@ -1216,13 +1299,18 @@ const PdfExtraction = () => {
                         {statementDetails?.ckycNumber && <p>CKYC: {statementDetails.ckycNumber}</p>}
                         {statementDetails?.closingBalance !== null && statementDetails?.closingBalance !== undefined && <p>Closing balance: {statementDetails.closingBalance}</p>}
                     </div>
-                    <p className="font-semibold">Preview ({previewData.length} extracted transactions; old transactions will be removed):</p>
+                    <p className="font-semibold">Preview ({previewData.length} extracted transaction row(s)):</p>
                     <div className="max-h-60 overflow-y-auto border rounded p-2 text-xs">
-                        {previewData.map((tx, i) => <div key={i}>{new Date(tx.date).toLocaleDateString()} - {tx.description} - {tx.amount}</div>)}
+                        {previewData.map((tx, i) => <div key={tx.id || i} className="flex justify-between gap-2 py-1">
+                            <span className="min-w-0 flex-1">{new Date(tx.date).toLocaleDateString('en-IN')} — {tx.description}</span>
+                            <span className="shrink-0 font-medium">{tx.type === 'debit' ? 'Dr ' : 'Cr '}{Math.abs(tx.amount).toLocaleString('en-IN', { style: 'currency', currency: 'INR' })}</span>
+                        </div>)}
                     </div>
-                    <div className="grid grid-cols-2 gap-2">
-                        <Button onClick={handleSavePreview} disabled={!statementAccountNumber || !canSavePreview}>Replace App Data</Button>
-                        <Button onClick={handleExport} variant="outline">Export as JSON</Button>
+                    <div className="space-y-2">
+                        <Button onClick={() => handleSavePreview('app')} disabled={!statementAccountNumber || !canSavePreview} className="w-full">Replace App Data</Button>
+                        <Button onClick={() => handleSavePreview('transactions')} disabled={!state.accounts.some(account => normalizeAccountNumber(account.accountNumber) === normalizeAccountNumber(statementAccountNumber))} variant="outline" className="w-full">Replace Transactions Only</Button>
+                        <Button onClick={() => handleSavePreview('append')} disabled={!state.accounts.some(account => normalizeAccountNumber(account.accountNumber) === normalizeAccountNumber(statementAccountNumber))} variant="outline" className="w-full">Save Transactions (Skip Exact Duplicates)</Button>
+                        <Button onClick={handleExport} variant="secondary" className="w-full">Export Statement JSON</Button>
                     </div>
                 </div>
             )}
@@ -1266,7 +1354,7 @@ const SettingsPageContent = () => {
                         <TabsTrigger value="account">Account</TabsTrigger>
                         <TabsTrigger value="data">Data</TabsTrigger>
                         <TabsTrigger value="assets">Assets</TabsTrigger>
-                        <TabsTrigger value="ai">AI Tools</TabsTrigger>
+                        <TabsTrigger value="ai">PDF Import</TabsTrigger>
                     </TabsList>
                     <TabsContent value="account" className="mt-4">
                         <Card>
@@ -1320,9 +1408,9 @@ const SettingsPageContent = () => {
                     <TabsContent value="ai" className="mt-4">
                         <Card>
                              <CardHeader>
-                                <CardTitle>PDF Extraction</CardTitle>
+                                <CardTitle>Local PDF Statement Import</CardTitle>
                                 <CardDescription>
-                                    Extract text from supported PDF statements locally in your browser, preview transactions, and import or export JSON. Scanned PDFs require OCR support, which is not yet available in this version.
+                                    Extract embedded text from digital PDFs in this browser only, review the transaction rows, and choose Replace App Data, Replace Transactions Only, or Save Transactions. AI and OCR are not used; scanned image-only statements are unsupported.
                                 </CardDescription>
                             </CardHeader>
                             <PdfExtraction />

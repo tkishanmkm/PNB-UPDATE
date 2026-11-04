@@ -3,18 +3,20 @@
 import { useState, useCallback, Suspense, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter, useParams } from 'next/navigation';
-import { ArrowLeft, Home } from 'lucide-react';
+import { ArrowLeft, Home, ShieldCheck } from 'lucide-react';
 import { useAppContext } from '@/hooks/use-app-store';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import Image from 'next/image';
 import type { Transaction } from '@/lib/types';
 import { getActiveAccount } from '@/lib/accounts';
+import { LocalDemoNotice } from '@/components/local-demo-notice';
+import { isLocalImageSource } from '@/lib/local-image';
 
 const OtpIcon = ({ avatarUrl }: { avatarUrl: string }) => {
-    return (
-         <Image src={avatarUrl || 'https://placehold.co/40x40.png'} alt="OTP Avatar" width={40} height={40} className="rounded-full" data-ai-hint="notification icon" />
-    );
+    return isLocalImageSource(avatarUrl)
+        ? <Image src={avatarUrl} alt="Local demo OTP avatar" width={40} height={40} className="rounded-full" unoptimized />
+        : <span className="flex h-10 w-10 items-center justify-center rounded-full bg-rose-100 text-primary"><ShieldCheck className="h-6 w-6" /></span>;
 };
 
 
@@ -26,10 +28,10 @@ function OtpPopup({ otp, avatarUrl }: { otp: string; avatarUrl: string }) {
                      <OtpIcon avatarUrl={avatarUrl}/>
                     <div className="flex-1">
                         <div className="flex justify-between items-center">
-                            <p className="text-sm font-bold">VM-PNBSMS</p>
+                            <p className="text-sm font-bold">PNB ONE DEMO</p>
                             <p className="text-xs text-white/60">now</p>
                         </div>
-                        <p className="text-sm mt-0.5">Dear Customer, Your OTP is <span className="font-bold">{otp}</span> and is valid for only 180 sec. Do not share it wit...</p>
+                        <p className="text-sm mt-0.5">Local demo OTP: <span className="font-bold">{otp}</span>. No SMS was sent and no bank authentication was performed.</p>
                     </div>
                 </div>
             </div>
@@ -45,7 +47,7 @@ function VerifyTransfer() {
     const { toast } = useToast();
     
     const payeeId = params.id as string;
-    const { currentTransfer, settings, user } = state;
+    const { currentTransfer, settings } = state;
     const payee = state.payees.find(p => p.id === payeeId);
     
     const [otp, setOtp] = useState('');
@@ -230,7 +232,8 @@ function VerifyTransfer() {
 
             <main className="flex-1 flex flex-col justify-start items-start p-6 pt-12 text-left">
                 <div className="w-full">
-                    <p className="text-base text-gray-700 mb-2">OTP has been sent to your registered mobile number ******{(user.mobileNumber || '').slice(-4)}</p>
+                    <LocalDemoNotice className="mx-0 mb-4 mt-0" />
+                    <p className="text-base text-gray-700 mb-2">A local demo OTP was generated in this browser. No message was sent to your mobile number.</p>
                     
                     <div 
                         className="relative flex justify-start items-center gap-3 my-8 cursor-text"

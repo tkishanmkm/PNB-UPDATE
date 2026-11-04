@@ -93,7 +93,7 @@ export const defaultState: AppState = {
     mobileNumber: '9876543210',
     mpin: generateRandomPin(), // Randomized MPIN
     tpin: '4278', // User explicitly asked for this to be 4278 previously
-    avatar: 'https://placehold.co/120x120/E6D2B1/4A2E2C?text=RY',
+    avatar: '',
     dob: '01-01-1990',
   },
   accounts: [
@@ -103,7 +103,7 @@ export const defaultState: AppState = {
       accountNumber: '1584001700102133',
       type: 'Savings',
       balance: finalBalance,
-      currencySymbol: 'â‚¹',
+      currencySymbol: '₹',
       accountHolder: 'Rahul Yadav',
       customerAddress: 'A-123, Rose Apartments, Sector 18',
       customerCity: 'Noida',
@@ -128,23 +128,19 @@ export const defaultState: AppState = {
     { id: 'payee3', name: 'Alice Williams', accountNumber: '9876543210987', bank: 'Axis Bank', ifsc: 'AXIS0009876', nickname: 'Alice' },
   ],
   chatHistory: [
-    { id: 'msg1', sender: 'system', content: 'Chat started with agent Anjali.', timestamp: new Date(Date.now() - 10 * 60 * 1000).toISOString() },
+    { id: 'msg1', sender: 'system', content: 'Local PNB ONE support chat started.', timestamp: new Date(Date.now() - 10 * 60 * 1000).toISOString() },
   ],
   currentTransfer: {},
   settings: {
     appLogo: '/pnb-splash/pnb-logo.png',
-    loginHelpAvatar: 'https://placehold.co/120x120/FFC107/4A2E2C?text=Help',
-    otpAvatar: 'https://placehold.co/120x120/4CAF50/FFFFFF?text=OTP',
-    agentAvatar: 'https://placehold.co/120x120/E91E63/FFFFFF?text=Agent',
-    pdfBanner: 'https://placehold.co/1200x200/9D2536/FFFFFF?text=Account+Statement',
-    currencySymbol: 'â‚¹',
+    loginHelpAvatar: '',
+    otpAvatar: '',
+    agentAvatar: '',
+    pdfBanner: '',
+    currencySymbol: '₹',
     iconAssets: {},
     pnbOneLogo: '/pnb-splash/pnb-one-mark.png',
-    pnbBanner: 'https://placehold.co/250x31/FFFFFF/9D2536?text=Punjab+National+Bank',
-    carouselBanners: [
-        { src: 'https://placehold.co/600x300/F44336/FFFFFF?text=Offer+1', alt: 'Promotion 1', hint: 'finance promotion' },
-        { src: 'https://placehold.co/600x300/2196F3/FFFFFF?text=Offer+2', alt: 'Promotion 2', hint: 'loan offer' },
-        { src: 'https://placehold.co/600x300/4CAF50/FFFFFF?text=Offer+3', alt: 'Promotion 3', hint: 'investment plan' },
-    ]
+    pnbBanner: '/pnb-splash/punjab-national-bank.png',
+    carouselBanners: []
   }
 };

@@ -1,8 +1,7 @@
 
 "use client";
 
-import React, { useState, useEffect, useCallback, useRef } from "react";
-import { useRouter } from "next/navigation";
+import React, { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Fingerprint, Phone, QrCode, MapPin, Gift, ShieldCheck, MoreHorizontal, MessageSquare, Twitter, Linkedin, Instagram, Youtube } from "lucide-react";
@@ -12,6 +11,7 @@ import { cn } from "@/lib/utils";
 import { Carousel, CarouselContent, CarouselItem, type CarouselApi } from "@/components/ui/carousel";
 import Autoplay from "embla-carousel-autoplay";
 import { SplashScreen } from "@/components/splash-screen";
+import { isLocalImageSource } from "@/lib/local-image";
 
 
 const FacebookIcon = (props: React.SVGProps<SVGSVGElement>) => (
@@ -33,7 +33,6 @@ export default function LoginPage() {
   const [greeting, setGreeting] = useState("Good Morning");
   const { toast } = useToast();
   const { state, dispatch } = useAppContext();
-  const router = useRouter();
   const [carouselApi, setCarouselApi] = useState<CarouselApi | undefined>(undefined);
   const [activeBannerIndex, setActiveBannerIndex] = useState(0);
   const [superLoginStage, setSuperLoginStage] = useState<'checking'|'normal'|'welcome'|'loading'|'userid'|'password'|'otp'>('checking');
@@ -212,8 +211,8 @@ export default function LoginPage() {
 
   if (superLoginStage !== 'normal') {
     const configuredHeaderLogo = settings?.appLogo || settings?.pnbOneLogo;
-    const headerLogo = configuredHeaderLogo && !configuredHeaderLogo.includes("placehold.co") ? configuredHeaderLogo : "/pnb-splash/pnb-logo.png";
-    if (superLoginStage === 'loading') return <main className="fixed inset-0 z-[200] flex min-h-screen flex-col items-center justify-center gap-5 bg-white p-6"><Image src={headerLogo || settings?.pnbOneLogo || '/placeholder.png'} alt="PNB ONE" width={180} height={72} className="h-auto max-h-20 w-auto max-w-[70vw] object-contain" priority /><div aria-label="Loading" role="status" className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" /></main>;
+    const headerLogo = isLocalImageSource(configuredHeaderLogo) ? configuredHeaderLogo : "/pnb-splash/pnb-logo.png";
+    if (superLoginStage === 'loading') return <main className="fixed inset-0 z-[200] flex min-h-screen flex-col items-center justify-center gap-5 bg-white p-6"><Image src={headerLogo} alt="PNB ONE" width={180} height={72} className="h-auto max-h-20 w-auto max-w-[70vw] object-contain" priority /><div aria-label="Loading" role="status" className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" /></main>;
     const submitUserId = () => {
       const found = state.accounts.some(a => [a.customerId, a.userId].some(v => v && v === superUserId.trim()));
       if (!superUserId.trim() || !found) { setSuperLoginError('Please enter the Customer ID configured in Settings.'); return; }
@@ -235,19 +234,19 @@ export default function LoginPage() {
     return (
       <div className="pnb-page flex min-h-screen flex-col bg-gray-50">
         <header className="flex h-16 items-center justify-between border-b bg-white px-4">
-          <span className="text-xs font-semibold text-primary">App Version: 5.43</span>
+          <span className="text-xs font-semibold text-primary">App Version: 4.43</span>
           {headerLogo && <Image src={headerLogo} alt="App Logo" width={140} height={44} className="h-10 w-auto object-contain" />}
           <span className="flex h-8 w-8 items-center justify-center rounded-full border bg-white text-sm font-semibold text-primary">à¤•A</span>
         </header>
         {superLoginStage === 'welcome' ? (
-          settings?.pnbBanner ? <div className="flex w-full justify-center border-b bg-white px-3 py-2"><Image src={settings.pnbBanner} alt="Splash Screen Banner (PNB)" width={600} height={90} className="h-auto max-h-16 w-auto max-w-full object-contain" priority /></div> :
-          <div className="w-full border-b bg-white"><Image src={carouselBanners[3]?.src || carouselBanners[0]?.src || '/placeholder.png'} alt="Splash Screen Banner (PNB)" width={600} height={300} className="max-h-32 w-full object-cover" priority /></div>
-        ) : <div className="relative w-full border-b bg-white">
+          isLocalImageSource(settings?.pnbBanner) ? <div className="flex w-full justify-center border-b bg-white px-3 py-2"><Image src={settings.pnbBanner} alt="Splash Screen Banner (PNB)" width={600} height={90} className="h-auto max-h-16 w-auto max-w-full object-contain" priority /></div> :
+          isLocalImageSource(carouselBanners[3]?.src || carouselBanners[0]?.src) ? <div className="w-full border-b bg-white"><Image src={(carouselBanners[3]?.src || carouselBanners[0]?.src)!} alt="Splash Screen Banner (PNB)" width={600} height={300} className="max-h-32 w-full object-cover" priority /></div> : null
+        ) : carouselBanners.some(item => isLocalImageSource(item.src)) ? <div className="relative w-full border-b bg-white">
           <Carousel opts={{ loop: true }} plugins={[Autoplay({ delay: 3000, stopOnInteraction: false })]} className="w-full">
-            <CarouselContent>{carouselBanners.map((item, index) => <CarouselItem key={index}><Image src={item.src} alt={item.alt || `Banner ${index + 1}`} width={600} height={300} className="max-h-40 w-full object-cover" /></CarouselItem>)}</CarouselContent>
+            <CarouselContent>{carouselBanners.filter(item => isLocalImageSource(item.src)).map((item, index) => <CarouselItem key={index}><Image src={item.src} alt={item.alt || `Banner ${index + 1}`} width={600} height={300} className="max-h-40 w-full object-cover" /></CarouselItem>)}</CarouselContent>
           </Carousel>
-        </div>}
-        {((showSuperOtpNotice && otpNoticeVisible) || showDemoPasswordNotice) && (superLoginStage === 'otp' || superLoginStage === 'password') && <div role="status" aria-live="polite" className={`absolute left-1/2 top-2 z-[100] w-[calc(100%-16px)] max-w-2xl -translate-x-1/2 overflow-hidden rounded-md bg-[#38383b] text-white shadow-xl transition-all duration-500 ${showSuperOtpNotice && !otpNoticeVisible ? '-translate-y-[calc(100%+16px)] opacity-0' : 'translate-y-0 opacity-100'}` }><div className="flex min-h-[68px] items-center gap-3 px-3 py-2"><div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-full bg-white/15">{settings?.otpAvatar ? <Image src={settings.otpAvatar} alt="OTP Notification Avatar" width={44} height={44} className="h-11 w-11 rounded-full object-cover" unoptimized /> : <svg viewBox="0 0 44 44" aria-hidden="true" className="h-11 w-11"><circle cx="22" cy="22" r="22" fill="#d1d5db"/><circle cx="22" cy="15" r="7" fill="#fff"/><path d="M7 38c1-8 7-13 15-13s14 5 15 13" fill="#fff"/></svg>}</div><div className="min-w-0 flex-1"><div className="text-base font-medium leading-5">VM-PNBSMS</div><p className="mt-1 whitespace-normal break-words text-sm leading-5 text-white/90">{showDemoPasswordNotice ? <>Dear Customer, Your local demo password is <span className="font-bold">{generatedDemoPassword}</span>. This is not a bank password.</> : <>Dear Customer, Your local demo OTP is <span className="font-bold tracking-wide">{generatedSuperOtp}</span> and is valid for only 180 sec. Do not share it with anyone.</>}</p></div></div></div>}
+        </div> : null}
+        {((showSuperOtpNotice && otpNoticeVisible) || showDemoPasswordNotice) && (superLoginStage === 'otp' || superLoginStage === 'password') && <div role="status" aria-live="polite" className={`absolute left-1/2 top-2 z-[100] w-[calc(100%-16px)] max-w-2xl -translate-x-1/2 overflow-hidden rounded-md bg-[#38383b] text-white shadow-xl transition-all duration-500 ${showSuperOtpNotice && !otpNoticeVisible ? '-translate-y-[calc(100%+16px)] opacity-0' : 'translate-y-0 opacity-100'}` }><div className="flex min-h-[68px] items-center gap-3 px-3 py-2"><div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-full bg-white/15">{isLocalImageSource(settings?.otpAvatar) ? <Image src={settings.otpAvatar} alt="Local demo OTP avatar" width={44} height={44} className="h-11 w-11 rounded-full object-cover" unoptimized /> : <svg viewBox="0 0 44 44" aria-hidden="true" className="h-11 w-11"><circle cx="22" cy="22" r="22" fill="#d1d5db"/><circle cx="22" cy="15" r="7" fill="#fff"/><path d="M7 38c1-8 7-13 15-13s14 5 15 13" fill="#fff"/></svg>}</div><div className="min-w-0 flex-1"><div className="text-base font-medium leading-5">PNB ONE DEMO</div><p className="mt-1 whitespace-normal break-words text-sm leading-5 text-white/90">{showDemoPasswordNotice ? <>Local demo password: <span className="font-bold">{generatedDemoPassword}</span>. Not a bank credential.</> : <>Local demo OTP: <span className="font-bold tracking-wide">{generatedSuperOtp}</span>. No SMS was sent or bank authentication performed.</>}</p></div></div></div>}
         {superLoginStage === 'welcome' ? (
           <main className="flex flex-1 flex-col items-center justify-center p-6"><div className="w-full max-w-sm space-y-6 rounded-lg border bg-white p-6 text-center shadow-sm">
             {headerLogo && <Image src={headerLogo} alt="App Logo" width={190} height={68} className="mx-auto h-16 w-auto object-contain" />}
@@ -276,10 +275,10 @@ export default function LoginPage() {
             {superLoginError && <p role="alert" className="mt-2 text-sm text-red-600">{superLoginError}</p>}<Button className="mt-4 w-full" onClick={submitOtp}>Verify OTP</Button><button type="button" className="mt-3 w-full text-sm font-semibold text-primary underline underline-offset-4" onClick={() => { const otp = String(Math.floor(100000 + Math.random() * 900000)); setGeneratedSuperOtp(otp); setSuperOtp(''); setSuperLoginError('A new local demo OTP was generated. Check the notification at the top.'); setOtpNoticeVisible(false); setShowSuperOtpNotice(true); setOtpNoticeCycle(cycle => cycle + 1); }}>Resend OTP</button></div></div></main>
         ) : null}
         {superLoginStage === 'welcome' && <footer className="mt-auto border-t bg-white px-4 py-3"><div className="flex items-center justify-center gap-5 text-primary"><MessageSquare className="h-5 w-5"/><FacebookIcon className="h-5 w-5"/><Twitter className="h-5 w-5"/><Linkedin className="h-5 w-5"/><Instagram className="h-5 w-5"/><Youtube className="h-5 w-5"/></div><div className="mt-4 flex justify-around text-sm text-gray-600"><span className="flex items-center gap-1.5"><Phone className="h-4 w-4 text-primary"/>1800-1800</span><span className="flex items-center gap-1.5"><Phone className="h-4 w-4 text-primary"/>1800-2021</span></div><div className="mt-2 flex justify-center text-sm text-gray-600"><span className="flex items-center gap-1.5"><Phone className="h-4 w-4 text-primary"/>0120-249000</span></div></footer>}
-        {superLoginStage === 'welcome' && carouselBanners[3] && <div className="w-full border-t bg-white"><Image src={carouselBanners[3].src} alt={carouselBanners[3].alt || 'Banner 4'} width={600} height={300} className="max-h-36 w-full object-cover" /></div>}
+        {superLoginStage === 'welcome' && isLocalImageSource(carouselBanners[3]?.src) && <div className="w-full border-t bg-white"><Image src={carouselBanners[3].src} alt={carouselBanners[3].alt || 'Banner 4'} width={600} height={300} className="max-h-36 w-full object-cover" /></div>}
         {superLoginStage !== 'welcome' && <div className="mt-auto flex items-center justify-between gap-3 border-t bg-white px-4 py-3">
           <div className="min-w-0"><p className="text-sm font-semibold text-primary">Login Help</p><p className="text-xs text-gray-600">Need help signing in?</p></div>
-          <div className="flex items-center gap-3">{settings?.loginHelpAvatar && <Image src={settings.loginHelpAvatar} width={52} height={52} alt="Login Help Avatar" className="h-12 w-12 rounded-full object-cover" />}</div>
+          <div className="flex items-center gap-3">{isLocalImageSource(settings?.loginHelpAvatar) && <Image src={settings.loginHelpAvatar} width={52} height={52} alt="Login Help Avatar" className="h-12 w-12 rounded-full object-cover" unoptimized />}</div>
         </div>}
         {superLoginStage !== 'welcome' && <footer className="border-t bg-white px-4 pb-20 pt-4"><div className="flex items-center justify-center gap-4 text-primary"><MessageSquare className="h-5 w-5"/><FacebookIcon className="h-5 w-5"/><Twitter className="h-5 w-5"/><Linkedin className="h-5 w-5"/><Instagram className="h-5 w-5"/><Youtube className="h-5 w-5"/></div><div className="mt-4 flex justify-around text-sm text-gray-600"><span className="flex items-center gap-1.5"><Phone className="h-4 w-4 text-primary"/>1800-1800</span><span className="flex items-center gap-1.5"><Phone className="h-4 w-4 text-primary"/>1800-2021</span></div><div className="mt-2 flex justify-center text-sm text-gray-600"><span className="flex items-center gap-1.5"><Phone className="h-4 w-4 text-primary"/>0120-249000</span></div></footer>}
         {superLoginStage !== 'welcome' && <div className="fixed bottom-0 left-0 right-0 z-40 mx-auto max-w-md"><div className="flex h-16 items-center justify-around rounded-t-2xl bg-primary text-primary-foreground">{bottomNavItems.filter(item => !item.isCentral).map(item => { const Icon = item.icon; return <div key={item.label} className="flex flex-1 flex-col items-center justify-center gap-0.5"><Icon className="h-5 w-5 text-white"/><span className="text-[10px] font-medium text-white">{item.label}</span></div>; })}</div></div>}
@@ -289,8 +288,8 @@ export default function LoginPage() {
   return (
     <div className="pnb-page pnb-login flex min-h-[100dvh] flex-col bg-gray-50 pb-[env(safe-area-inset-bottom)]">
         <header className="flex items-center justify-between p-3 bg-gray-50 h-16">
-            <span className="text-xs text-primary font-semibold">App Version: 5.43</span>
-            {settings?.appLogo && !settings.appLogo.includes("placehold.co") ? (<Image src={settings.appLogo} alt="App Logo" width={120} height={40} className="h-10 w-auto object-contain" data-ai-hint="app logo" />) : (<Image src="/pnb-splash/pnb-logo.png" alt="PNB" width={120} height={54} className="h-10 w-auto object-contain" />)}
+            <span className="text-xs text-primary font-semibold">App Version: 4.43</span>
+            {isLocalImageSource(settings?.appLogo) ? (<Image src={settings.appLogo} alt="App Logo" width={120} height={40} className="h-10 w-auto object-contain" />) : (<Image src="/pnb-splash/pnb-logo.png" alt="PNB" width={120} height={54} className="h-10 w-auto object-contain" />)}
             <div className="flex items-center justify-center w-8 h-8 rounded-full border bg-white shadow-sm">
                 <span className="font-semibold text-primary">à¤•A</span>
             </div>
@@ -305,10 +304,10 @@ export default function LoginPage() {
                   className="w-full"
                 >
                     <CarouselContent>
-                        {carouselBanners.map((banner, index) => (
+                        {carouselBanners.filter(banner => isLocalImageSource(banner.src)).map((banner, index) => (
                             <CarouselItem key={index}>
                                 <div className="p-1">
-                                    <Image src={banner.src} width={600} height={300} alt={banner.alt} className="rounded-xl shadow-md" data-ai-hint="bank promotion"/>
+                                    <Image src={banner.src} width={600} height={300} alt={banner.alt} className="rounded-xl shadow-md"/>
                                 </div>
                             </CarouselItem>
                         ))}
@@ -358,7 +357,7 @@ export default function LoginPage() {
                         <Fingerprint className="mr-2 h-5 w-5" /> LOGIN WITH BIOMETRICS
                     </Button>
                  </div>
-                 {settings?.loginHelpAvatar && <Image src={settings.loginHelpAvatar} width={60} height={60} alt="Help Avatar" data-ai-hint="girl cartoon" />}
+                 {isLocalImageSource(settings?.loginHelpAvatar) && <Image src={settings.loginHelpAvatar} width={60} height={60} alt="Login Help Avatar" unoptimized />}
             </div>
 
             <div className="flex justify-center items-center gap-4 text-primary mt-4">

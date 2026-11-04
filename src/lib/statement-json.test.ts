@@ -39,10 +39,10 @@ describe('statement JSON import/export consistency', () => {
     assert.equal(imported.transactions[0].amount, -250.5);
   });
 
-  it('blocks an unmatched account while retaining a safe preview', () => {
+  it('allows Replace App Data for a statement with a new account while blocking account-scoped operations', () => {
     const exported = createStatementJsonExport('999999999999', details, transactions);
     const imported = normalizeStatementJson(exported, () => null);
-    assert.equal(imported.canSave, false);
+    assert.equal(imported.canSave, true);
     assert.equal(imported.accountId, null);
     assert.equal(imported.transactions[0].accountId, 'unmatched');
   });

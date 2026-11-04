@@ -102,37 +102,31 @@ export function StatementContent() {
             const downloadDate = format(new Date(), 'ddMMyyyy');
             const filename = 'PNBONE_STMT_XX' + lastFour + '_' + downloadDate + '.pdf';
 
-            // Send the PDF through a same-origin attachment response. iOS Safari
-            // often ignores the download attribute on blob: URLs, but honors
-            // Content-Disposition: attachment on a normal HTTP response.
-            const downloadForm = document.createElement('form');
-            downloadForm.method = 'POST';
-            downloadForm.action = '/api/download-pdf';
-            downloadForm.enctype = 'multipart/form-data';
-            downloadForm.target = 'pnb-pdf-download-frame';
-            downloadForm.style.display = 'none';
-            const dataInput = document.createElement('input');
-            dataInput.type = 'hidden';
-            dataInput.name = 'pdfData';
-            dataInput.value = pdfDataUri;
-            const nameInput = document.createElement('input');
-            nameInput.type = 'hidden';
-            nameInput.name = 'filename';
-            nameInput.value = filename;
-            downloadForm.append(dataInput, nameInput);
-            let downloadFrame = document.querySelector<HTMLIFrameElement>('#pnb-pdf-download-frame');
-            if (!downloadFrame) {
-                downloadFrame = document.createElement('iframe');
-                downloadFrame.id = 'pnb-pdf-download-frame';
-                downloadFrame.name = 'pnb-pdf-download-frame';
-                downloadFrame.style.display = 'none';
-                document.body.appendChild(downloadFrame);
+            // Keep generated statement bytes in this browser; do not POST
+            // customer or transaction data to the application's hosting server.
+            const encodedPdf = pdfDataUri.split(',')[1];
+            if (!encodedPdf) throw new Error('The generated PDF data is invalid.');
+            const binaryPdf = atob(encodedPdf);
+            const pdfBytes = new Uint8Array(binaryPdf.length);
+            for (let index = 0; index < binaryPdf.length; index++) {
+                pdfBytes[index] = binaryPdf.charCodeAt(index);
             }
-            document.body.appendChild(downloadForm);
-            downloadForm.submit();
-            downloadForm.remove();
-            window.setTimeout(() => downloadFrame?.remove(), 120000);
-            toast({ title: 'Download started', description: 'Your statement was sent as a downloadable PDF attachment.' });
+            const pdfBlob = new Blob([pdfBytes], { type: 'application/pdf' });
+            const pdfUrl = URL.createObjectURL(pdfBlob);
+            const downloadLink = document.createElement('a');
+            downloadLink.href = pdfUrl;
+            downloadLink.download = filename;
+            downloadLink.rel = 'noopener';
+            downloadLink.style.display = 'none';
+            document.body.appendChild(downloadLink);
+            downloadLink.click();
+            downloadLink.remove();
+            window.setTimeout(() => URL.revokeObjectURL(pdfUrl), 60_000);
+            toast({
+                title: 'Statement generated locally',
+                description: 'The PDF stayed in this browser. On iPhone or iPad, use the PDF preview Share menu and choose Save to Files if Safari opens the document instead of downloading it.',
+                duration: 9000,
+            });
         } catch (error) {
             console.error("PDF Generation/Download Error:", error);
             toast({ variant: 'destructive', title: 'Error', description: error instanceof Error ? error.message : 'Failed to generate or download PDF.' });

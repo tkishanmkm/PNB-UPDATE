@@ -6,6 +6,7 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Home, Landmark, Repeat, ChevronRight, Globe2, Banknote, PiggyBank } from "lucide-react";
 import { RupeeIcon } from "@/components/rupee-icon";
+import { LocalDemoNotice } from "@/components/local-demo-notice";
 
 const TransferFundsIcon = () => (
     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -101,6 +102,7 @@ export default function FundTransferPage() {
                 </Link>
             </header>
 
+            <LocalDemoNotice />
             <main className="pnb-send-main flex-1 space-y-4 p-3 pb-8">
                 <section className="rounded-2xl border border-rose-100 bg-white p-3 shadow-sm">
                     <div className="mb-3 flex items-center justify-between px-1">

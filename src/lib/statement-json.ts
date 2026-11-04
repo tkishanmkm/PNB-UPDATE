@@ -140,7 +140,8 @@ export function normalizeStatementJson(
   return {
     accountNumber,
     accountId,
-    canSave: Boolean(accountId),
+    // Replace App Data can create a new account when the statement identifies it.
+    canSave: Boolean(accountNumber),
     statementDetails,
     transactions,
   };

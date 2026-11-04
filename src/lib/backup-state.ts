@@ -220,7 +220,13 @@ const normalizeTransfer = (
 export function normalizeAppBackup(
   value: unknown,
   defaults: AppState,
-  currentCredentials?: { mpin?: string; tpin?: string },
+  currentCredentials?: {
+    mpin?: string;
+    tpin?: string;
+    pdfPassword?: string;
+    loginPassword?: string;
+    demoLoginOtp?: string;
+  },
 ): AppState {
   if (!isRecord(value)) throw new Error('Invalid JSON backup structure.');
   if (!isRecord(value.user)) throw new Error('JSON backup is missing user details.');
@@ -269,17 +275,22 @@ export function normalizeAppBackup(
     email: textValue(rawUser.email, defaults.user.email),
     mobileNumber: textValue(rawUser.mobileNumber, defaults.user.mobileNumber),
     avatar: textValue(rawUser.avatar, defaults.user.avatar),
-    mpin: typeof rawUser.mpin === 'string' && /^\d{4}$/.test(rawUser.mpin) ? rawUser.mpin : currentMpin,
-    tpin: typeof rawUser.tpin === 'string' && /^\d{4}$/.test(rawUser.tpin) ? rawUser.tpin : currentTpin,
+    // Authentication secrets are device-local and are never trusted from JSON.
+    mpin: currentMpin,
+    tpin: currentTpin,
     accounts,
   };
 
   const rawSettings = value.settings === undefined || value.settings === null ? {} : value.settings;
   if (!isRecord(rawSettings)) throw new Error('Backup settings must be an object.');
-  const carouselValue = rawSettings.carouselBanners ?? value.carouselBanners;
+  const restoredPublicSettings = { ...rawSettings };
+  delete restoredPublicSettings.pdfPassword;
+  delete restoredPublicSettings.loginPassword;
+  delete restoredPublicSettings.demoLoginOtp;
+  const carouselValue = restoredPublicSettings.carouselBanners ?? value.carouselBanners;
   const settings = {
     ...defaults.settings,
-    ...rawSettings,
+    ...restoredPublicSettings,
     appLogo: textValue(rawSettings.appLogo, defaults.settings.appLogo),
     loginHelpAvatar: textValue(rawSettings.loginHelpAvatar, defaults.settings.loginHelpAvatar),
     otpAvatar: textValue(rawSettings.otpAvatar, defaults.settings.otpAvatar),
@@ -290,8 +301,11 @@ export function normalizeAppBackup(
     currencySymbol: textValue(rawSettings.currencySymbol, defaults.settings.currencySymbol),
     iconAssets: normalizeIconAssets(rawSettings.iconAssets, defaults.settings.iconAssets || {}),
     carouselBanners: normalizeBanners(carouselValue, defaults.settings.carouselBanners),
-    ...(typeof rawSettings.pdfPassword === 'string' ? { pdfPassword: rawSettings.pdfPassword } : {}),
-    ...(typeof rawSettings.loginPassword === 'string' ? { loginPassword: rawSettings.loginPassword } : {}),
+    // Keep only the current device's local credential values. Imported backups
+    // cannot supply or replace PDF passwords, local passwords, or demo OTPs.
+    ...(typeof currentCredentials?.pdfPassword === 'string' ? { pdfPassword: currentCredentials.pdfPassword } : {}),
+    ...(typeof currentCredentials?.loginPassword === 'string' ? { loginPassword: currentCredentials.loginPassword } : {}),
+    ...(typeof currentCredentials?.demoLoginOtp === 'string' ? { demoLoginOtp: currentCredentials.demoLoginOtp } : {}),
     agentEnglishStyle: rawSettings.agentEnglishStyle === '1' || rawSettings.agentEnglishStyle === '2' || rawSettings.agentEnglishStyle === '3'
       ? rawSettings.agentEnglishStyle
       : defaults.settings.agentEnglishStyle,

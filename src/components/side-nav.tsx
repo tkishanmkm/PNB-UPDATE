@@ -4,7 +4,6 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { 
     User, 
     MapPin, 
@@ -21,19 +20,17 @@ import { SheetClose, SheetTitle, SheetDescription, SheetHeader } from './ui/shee
 
 const navItems = [
   { href: '/my-profile', label: 'My Profile', icon: User },
-  { href: '#', label: 'PNB Locations', icon: MapPin },
-  { href: '#', label: 'Deposit Calculator', icon: Calculator },
+  { href: '', label: 'PNB Locations', icon: MapPin },
+  { href: '', label: 'Deposit Calculator', icon: Calculator },
   { href: '/contact-us', label: 'Contact Us', icon: Headphones },
-  { href: '#', label: 'Invite & Refer', icon: UserPlus },
-  { href: '/settings', label: 'Rate Us', icon: Star },
-  { href: '#', label: 'My Relationship Manager', icon: Users },
-  { href: '#', label: 'About App', icon: Info },
+  { href: '', label: 'Invite & Refer', icon: UserPlus },
+  { href: '', label: 'Rate Us', icon: Star },
+  { href: '', label: 'My Relationship Manager', icon: Users },
+  { href: '', label: 'About App', icon: Info },
 ];
 
 function SideNavComponent() {
   const { state, dispatch } = useAppContext();
-  const router = useRouter();
-
   const user = state.user;
 
   const handleLogout = React.useCallback(() => {
@@ -50,7 +47,7 @@ function SideNavComponent() {
             Navigation menu for PNB Bank application.
           </SheetDescription>
         </SheetHeader>
-        <div className="p-6 pt-12 bg-cover bg-center" style={{ backgroundImage: "url('https://www.transparenttextures.com/patterns/rings-bg.png')"}}>
+        <div className="p-6 pt-12 bg-cover bg-center">
             <div>
               <p className="text-lg">Hello,</p>
               <h2 className="text-xl font-bold truncate">{user.name.toUpperCase()}</h2>
@@ -59,12 +56,19 @@ function SideNavComponent() {
         
         <nav className="flex-1 space-y-2 p-4 overflow-y-auto">
             {navItems.map(({ icon: Icon, label, href }) => (
-              <SheetClose asChild key={label}>
-                <Link href={href} className="flex items-center gap-4 p-3 rounded-lg hover:bg-black/20 transition-colors">
+              href ? (
+                <SheetClose asChild key={label}>
+                  <Link href={href} className="flex items-center gap-4 p-3 rounded-lg hover:bg-black/20 transition-colors">
+                      <Icon className="h-6 w-6 text-accent" />
+                      <span className="font-medium">{label}</span>
+                  </Link>
+                </SheetClose>
+              ) : (
+                <div key={label} aria-disabled="true" className="flex items-center gap-4 p-3 rounded-lg opacity-60">
                     <Icon className="h-6 w-6 text-accent" />
                     <span className="font-medium">{label}</span>
-                </Link>
-              </SheetClose>
+                </div>
+              )
             ))}
         </nav>
 

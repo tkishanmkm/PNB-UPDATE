@@ -8,6 +8,8 @@ import { useAppContext } from '@/hooks/use-app-store';
 import { Button } from '@/components/ui/button';
 import { Check, Download, Landmark } from 'lucide-react';
 import { format } from 'date-fns';
+import { isLocalImageSource } from '@/lib/local-image';
+import { LocalDemoNotice } from '@/components/local-demo-notice';
 import Image from 'next/image';
 import { Card, CardContent } from '@/components/ui/card';
 import { formatCurrency } from '@/lib/utils';
@@ -92,7 +94,7 @@ function TransferSuccess() {
         let y = 16;
 
         // Keep the application logo's true aspect ratio instead of stretching it.
-        if (settings.appLogo) {
+        if (isLocalImageSource(settings.appLogo) && settings.appLogo.startsWith('data:image/')) {
             try {
                 const logoInfo = doc.getImageProperties(settings.appLogo);
                 const maxWidth = 42;
@@ -237,7 +239,11 @@ function TransferSuccess() {
         addRow('Reference ID', displayReferenceId);
         addRow('RRN', (displayRrn.split('/')[1] || displayRrn));
 
-        const filename = `Receipt-${displayReferenceId}.pdf`;
+        doc.setFontSize(7);
+        doc.setTextColor(130, 30, 45);
+        doc.text('LOCAL DEMONSTRATION RECEIPT — NOT A BANK PAYMENT CONFIRMATION', margin, doc.internal.pageSize.height - 8);
+
+        const filename = `Local-Demo-Receipt-${displayReferenceId}.pdf`;
         // Download the PDF directly instead of opening the iOS share sheet first.
         // iOS Safari can still choose its built-in PDF viewer; this is controlled by iOS.
         doc.save(filename);
@@ -246,8 +252,8 @@ function TransferSuccess() {
     return (
         <div className="pnb-page flex flex-col min-h-screen bg-gray-50">
              <header className="flex justify-center py-2">
-                {settings.appLogo && (
-                    <Image src={settings.appLogo} alt="App Logo" width={100} height={40} className="h-8 w-auto object-contain" data-ai-hint="app logo"/>
+                {isLocalImageSource(settings.appLogo) && (
+                    <Image src={settings.appLogo} alt="App Logo" width={100} height={40} className="h-8 w-auto object-contain"/>
                 )}
             </header>
             
@@ -260,16 +266,17 @@ function TransferSuccess() {
                 
                 <Card className="w-full text-left shadow-lg z-10">
                     <CardContent className="p-4">
-                        <h1 className="text-lg font-bold text-gray-800 text-center pt-6">Success</h1>
+                        <h1 className="text-lg font-bold text-gray-800 text-center pt-6">Local Demo Recorded</h1>
                         <p className="text-[10px] text-gray-500 mt-1 text-center px-4 leading-relaxed">
-                            Transaction with reference id {displayReferenceId} processed successfully. The RRN for the transaction is: {rrnNumber}
+                            Local demonstration entry {displayReferenceId} was recorded in this browser. Reference: {rrnNumber}. No bank payment was submitted and no funds were transferred.
                         </p>
                         
+                        <LocalDemoNotice className="mx-0 mt-3" />
                         <div className="mt-3 pt-3 border-t border-dashed space-y-0.5">
                             <DetailRow label="FROM"><span className="font-semibold text-gray-800 uppercase">{user.name}</span></DetailRow>
                             <DetailRow label="Account number">
                                 <span className="inline-flex items-center justify-end gap-0.5 whitespace-nowrap text-gray-600">
-                                    {settings.appLogo && <Image src={settings.appLogo} width={16} height={16} alt="PNB ONE app logo" className="shrink-0" />}
+                                    {isLocalImageSource(settings.appLogo) && <Image src={settings.appLogo} width={16} height={16} alt="PNB ONE app logo" className="shrink-0" />}
                                     <span>{maskAccountNumber(account.accountNumber)}</span>
                                 </span>
                             </DetailRow>

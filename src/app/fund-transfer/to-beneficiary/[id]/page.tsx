@@ -24,6 +24,7 @@ import { useToast } from "@/hooks/use-toast";
 import { formatCurrency } from "@/lib/utils";
 import { RupeeIcon } from "@/components/rupee-icon";
 import { getActiveAccount } from "@/lib/accounts";
+import { isLocalImageSource } from "@/lib/local-image";
 
 export default function TransferToBeneficiaryPage() {
     const { state, dispatch } = useAppContext();
@@ -138,7 +139,7 @@ export default function TransferToBeneficiaryPage() {
                             )}
                             <div className="flex items-center gap-3 p-3 border rounded-md mt-1 bg-white">
                                 <div className="flex items-center justify-center h-10 w-10 rounded-full bg-gray-100 p-1">
-                                    <Image src={appLogo} alt="Bank Logo" width={40} height={40} className="rounded-full" />
+                                    <Image src={isLocalImageSource(appLogo) ? appLogo : '/pnb-splash/pnb-logo.png'} alt="Bank Logo" width={40} height={40} className="rounded-full" />
                                 </div>
                                 <div>
                                     <p className="font-bold text-gray-800">{user.name}</p>

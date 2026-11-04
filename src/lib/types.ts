@@ -205,7 +205,9 @@ export type Action =
   | { type: 'COMPLETE_TRANSFER'; payload: { account: AccountDetails; debit: Transaction; charge?: Transaction } }
   | { type: 'ADD_ACCOUNT'; payload: AccountDetails }
   | { type: 'UPDATE_TRANSACTIONS'; payload: Transaction[] }
-  | { type: 'REPLACE_STATEMENT_DATA'; payload: { account: AccountDetails; transactions: Transaction[] } }
+  | { type: 'REPLACE_APP_DATA'; payload: { account: AccountDetails; transactions: Transaction[] } }
+  | { type: 'REPLACE_TRANSACTIONS_ONLY'; payload: { accountId: string; transactions: Transaction[] } }
+  | { type: 'SAVE_TRANSACTIONS'; payload: { accountId: string; transactions: Transaction[] } }
   | { type: 'ADD_PAYEE'; payload: Payee }
   | { type: 'DELETE_PAYEE'; payload: {id: string} }
   | { type: 'UPDATE_PAYEES'; payload: Payee[] }

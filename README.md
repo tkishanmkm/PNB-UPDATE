@@ -1,85 +1,85 @@
-# PNB eBank Prototype
+# PNB ONE — local data manager
 
-This is a high-fidelity, interactive mobile banking application prototype named "PNB eBank Prototype". The application is built using Next.js with the App Router and is designed to be fully functional, showcasing a comprehensive design system, multiple user flows, and integrated AI features.
+A Next.js reconstruction of the PNB ONE 4.43 mobile interface, using visual evidence from the original split APK and extracted UI assets. The app's local data features follow the PNB ONE written project specification.
 
-## Core Technology Stack
+> **This is not the official PNB application and is not connected to PNB, NPCI, UPI, payment gateways, remittance networks, or any bank system.** Login, OTP, transfer, receipt and balance flows are local demonstrations. No real banking authentication, live bank balance, or money movement is available.
 
-- **Framework**: Next.js with App Router for modern, performant web applications.
-- **Language**: TypeScript for type safety and improved developer experience.
-- **UI Library**: React for building interactive user interfaces.
-- **Styling**: Tailwind CSS for a utility-first CSS framework.
-- **Component Library**: ShadCN UI, providing a set of reusable and accessible components.
-- **Icons**: `lucide-react` for a consistent and clean icon set.
-- **AI Integration**: Google's Genkit for generative AI functionality, powering features like the AI Chat Agent and PDF transaction extraction.
-- **State Management**: A global state solution using React Context and the `useReducer` hook, with state persisted to `localStorage`. The core logic resides in `src/hooks/use-app-store.tsx`.
-- **PDF Generation**: `jspdf` and `jspdf-autotable` are used for generating downloadable PDF account statements.
+## Scope and evidence
 
-## Application Architecture & Routing
+The APK extraction exposed six screenshot-backed reference screens (Dashboard, Services, Profile Settings, Government Schemes, Invest and Send Money), 32 split APK members, a 74,561-file decoded base APK tree, 4,493 curated Android UI resources, 178 CCMS assets, 244 font file instances and 28 individually decompiled screen/component functions.
 
-The application follows a simple and stable routing structure, optimized for a mobile banking experience.
+The main app is a React Native/Hermes HBC v96 bundle. Its original readable JSX/TypeScript source was not recovered, and complete module decompilation was not performed. The six screenshots do not show every dialog, loading state, error state or navigation destination. See [APK UI Audit](docs/APK-UI-AUDIT.md) for the precise limits; do not interpret 25 existing web routes as 25 independently recovered APK screens.
 
-- **Login as Root**: The application's root (`/`) serves as the Login Page.
-- **Unified Layout**: A single root layout at `src/app/layout.tsx` conditionally renders the main `AppHeader` and `BottomNav` components based on authentication status and the current route. These UI elements are hidden on the public-facing login page.
-- **Authenticated Routes**: All pages requiring user authentication have clear, top-level routes:
-  - `/dashboard`: The main landing page after login.
-  - `/all-accounts`: A view of all user accounts.
-  - `/account-statement`: Form to select a date range for viewing transactions.
-  - `/statement`: Displays the filtered transaction list.
-  - `/fund-transfer/*`: A multi-step flow for transferring funds.
-  - `/agent-live-chat`: An AI-powered chat agent for customer support.
-  - `/settings`: An admin control panel for managing mock application data.
+## Local technology
 
-## Design System & UI/UX
+- Next.js App Router, React, TypeScript.
+- Browser IndexedDB through `pnb_pro_db` / `app_state`.
+- Local PDF text extraction through PDF.js.
+- Local PDF report generation with jsPDF and jspdf-autotable.
+- JSON backup and restore with structural validation.
+- Local transaction, account and payee data management.
+- No Genkit, Google GenAI, AI API, banking API or cloud database dependency.
 
-- **Color Palette**:
-  - **Primary (Vibrant Red)**: `hsl(3.1 79.3% 53.3%)` - A modern, energetic red for key interactive elements.
-  - **Background (Off-White)**: `hsl(240 10% 98%)` - A clean, light background for the main app container.
-  - **Card/Accent (White)**: `hsl(0 0% 100%)` - Pure white for cards and content areas to ensure clarity and contrast.
-- **Typography**:
-  - **Headlines/Titles**: **Poppins** (Google Font) - A modern, geometric sans-serif for a clean and professional look.
-  - **Body/Descriptions**: **PT Sans** (Google Font) - A highly readable sans-serif that complements Poppins.
-- **Layout**:
-  - The main application is centered with a `max-w-md` constraint to simulate a mobile-first experience on all screen sizes.
-  - `Card` components from ShadCN UI are used extensively to structure content and create a visually organized hierarchy.
-- **Splash Screen**: A splash screen is displayed for 2 seconds on initial load, showing the PNB logo and a loading indicator while the application state is initialized from `localStorage`.
+## Implemented local features
 
-## Key Features
+- Customer/account profile fields, locally stored balances and account selection.
+- Transaction add/edit/delete/search/filter/sort and running-balance reconciliation.
+- Account-isolated transaction history and quarterly average balance calculation.
+- PDF text extraction in the browser; AI and OCR are not used. Scanned/image-only PDFs are not supported.
+- Statement preview and three import modes:
+  1. **Replace App Data** replaces the saved accounts and transaction ledger with one statement-backed account and its transactions; unrelated payees, support history, app settings and appearance assets remain.
+  2. **Replace Transactions Only** replaces the matched account's transactions, not account details or other accounts.
+  3. **Save Transactions** appends statement rows and skips only exact same-ID/same-content duplicates; a conflicting reused ID aborts the import.
+- Local multi-page PDF report generation. Generated reports are app outputs, **not official bank-issued statements**.
+- Statement JSON export and whole-app JSON backup/restore (50 MB input limit).
+- Backup files exclude MPIN, TPIN, local login password, OTP and PDF password. Restoration preserves current device credentials and forces a fresh app login.
+- Locally stored payees, app settings and support-chat history.
+- Local support responses based on data already saved in this browser.
 
-### 1. Login & Authentication
-- Time-based greeting (e.g., "Good Morning").
-- Secure 4-digit MPIN input for authentication.
-- "Trouble Signing In?" feature that reveals the correct PIN for demonstration purposes.
-- An auto-playing carousel of promotional banners.
+## Start the application
 
-### 2. Dashboard
-- Displays the user's primary savings account balance with a visibility toggle.
-- "Quick Actions" grid for easy access to core features like sending money, viewing statements, and more.
-- An "Our Services" section for secondary features.
+Requirements: Node.js compatible with the current Next.js project (Node 20+ recommended) and npm.
 
-### 3. Fund Transfer
-- A multi-step flow guides the user through transferring funds:
-  1.  **Beneficiary Selection**: Choose a recipient from a saved list.
-  2.  **Amount & Remarks**: Specify the transfer amount and a note.
-  3.  **Confirmation**: A multi-step confirmation process involving a summary, TPIN, and a simulated OTP.
-  4.  **Success**: A final confirmation screen with a downloadable transaction receipt.
+```powershell
+npm ci
+npm run dev
+```
 
-### 4. Account Statements
-- Select a custom date range to view transaction history.
-- View a detailed list of transactions for the selected period.
-- Download a multi-page PDF of the statement, complete with a professional header, using `jspdf`.
+Open [http://localhost:3000](http://localhost:3000).
 
-### 5. AI Chat Agent
-- A full-featured, AI-powered chat interface for customer support.
-- Utilizes Genkit flows with integrated tools to:
-  - **Verify User**: Securely verify the user's identity using their MPIN before discussing sensitive information.
-  - **Get Transaction Details**: Look up specific transactions from the application's state.
-  - **Delete Chat History**: Clear the conversation history upon user request.
+## Validation commands
 
-### 6. Admin Control Panel
-- A comprehensive, tabbed interface for managing all mock data within the application.
-- **CRUD Operations**: Full control over account details, transactions, and payees.
-- **Asset Management**: Upload and manage images for logos, banners, and avatars (stored in-app as Base64).
-- **Data Management**:
-  - Import and export the entire application state as a JSON file.
-  - Reset the application state to its default mock data.
-- **AI-Powered PDF Extraction**: Upload a PDF bank statement, and a Genkit flow automatically extracts and integrates the transactions into the application's state.
+```powershell
+npm run typecheck
+npm test
+npm run lint
+npm run build
+npm start
+```
+
+## Local storage and privacy
+
+- New app state is persisted to IndexedDB (`pnb_pro_db`, object store `app_state`).
+- Older localStorage state may be read once for migration and removed after successful IndexedDB migration. It is not the new persistence target.
+- Clearing browser site data removes the local app database and uploaded local assets unless the user has exported a private JSON backup.
+- Imported JSON image references are restricted to local bundled paths or supported base64 image data; arbitrary external image URLs are not loaded.
+- Do not put actual bank statements, credentials or personal records in the Git repository. Local records belong in the user's browser only.
+- Demo login/OTP/TPIN screens are local simulation controls, not bank security verification.
+
+## Documentation
+
+- [APK UI audit](docs/APK-UI-AUDIT.md)
+- [Screen inventory](docs/SCREEN-INVENTORY.md)
+- [Asset inventory](docs/ASSET-INVENTORY.md)
+- [Design system](docs/DESIGN-SYSTEM.md)
+- [Navigation map](docs/NAVIGATION-MAP.md)
+- [Existing extraction reference](docs/PNB-ONE-4.43-UI-REFERENCE.md)
+
+## Important limitations
+
+1. Visual source evidence consists of six still reference screens, not a recorded full APK session.
+2. The complete original React Native component source, all routes and every interaction were not recovered from Hermes.
+3. Not all of the 25 pre-existing web routes have direct APK screenshot evidence.
+4. No pixel-perfect comparison against the running Android APK was available.
+5. Font binaries were catalogued but not redistributed into the web bundle because a clear per-font license basis was not established.
+6. Catalogue features without a written-spec local workflow are disabled/informational; no live bank functionality has been invented.

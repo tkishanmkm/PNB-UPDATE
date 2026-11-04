@@ -2,7 +2,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef, Suspense } from 'react';
-import { useSearchParams, useRouter } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Bot, Send, Star, ArrowLeft, Home, MessageSquare } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -12,9 +12,9 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import { useAppContext } from '@/hooks/use-app-store';
 import { useToast } from '@/hooks/use-toast';
-import { agentChat } from '@/ai/flows/agent-chat-flow';
 import type { ChatMessage } from '@/lib/types';
-import type { MessageData } from 'genkit';
+import { respondToLocalSupport } from '@/lib/local-support';
+import { isLocalImageSource } from '@/lib/local-image';
 
 type Message = {
   id: string;
@@ -25,8 +25,6 @@ type Message = {
 };
 
 type ChatState = 'idle' | 'chatting' | 'ended';
-
-const indianAgentNames = ["Priya", "Rahul", "Anjali", "Rohan", "Sneha", "Vikram", "Neha", "Amit"];
 
 const StarRating = ({ onRate }: { onRate: (rating: number) => void }) => {
     const [rating, setRating] = useState(0);
@@ -62,15 +60,13 @@ const StarRating = ({ onRate }: { onRate: (rating: number) => void }) => {
 
 function AgentLiveChatContent() {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const { state, dispatch } = useAppContext();
   const { toast } = useToast();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [chatState, setChatState] = useState<ChatState>('idle');
-  const [agentName, setAgentName] = useState('');
-  const [isVerified, setIsVerified] = useState(false);
+  const [agentName] = useState('PNB ONE Support');
   const [showRating, setShowRating] = useState(false);
 
   const scrollAreaRef = useRef<HTMLDivElement>(null);
@@ -107,8 +103,7 @@ function AgentLiveChatContent() {
         setMessages([]);
         setChatState('idle');
     }
-    const name = indianAgentNames[Math.floor(Math.random() * indianAgentNames.length)];
-    setAgentName(name);
+
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.chatHistory]);
 
@@ -154,18 +149,13 @@ function AgentLiveChatContent() {
     setMessages([]); // Clear local messages first
     dispatch({ type: 'UPDATE_CHAT_HISTORY', payload: [] }); // Clear global history
     setShowRating(false);
-    setIsVerified(false);
-    addMessage('system', 'Please wait while you are transferred to an agent...');
+    addMessage('system', 'Starting a local support conversation...');
     simulateTyping(() => {
-        const name = indianAgentNames[Math.floor(Math.random() * indianAgentNames.length)];
-        setAgentName(name);
-        addMessage('system', `Agent ${name} connected.`);
-        simulateTyping(() => {
-            const hour = new Date().getHours();
-            const greeting = hour < 12 ? "Good Morning" : hour < 17 ? "Good Afternoon" : "Good Evening";
-            addMessage('model', `${greeting}! My name is ${name}. How may I help you today?`);
-            setChatState('chatting');
-        });
+        const hour = new Date().getHours();
+        const greeting = hour < 12 ? "Good Morning" : hour < 17 ? "Good Afternoon" : "Good Evening";
+        addMessage('system', 'The PNB ONE local support assistant is ready.');
+        addMessage('model', `${greeting}! I am the PNB ONE local support assistant. How may I help you today?`);
+        setChatState('chatting');
     });
   }
 
@@ -174,7 +164,7 @@ function AgentLiveChatContent() {
     if (!userMessageText) return;
 
     // Special handling for starting a new chat
-    if (/^hi|hii|hello$/i.test(userMessageText) && (chatState === 'idle' || chatState === 'ended')) {
+    if (/^(?:hi|hii|hello|hey)$/i.test(userMessageText) && (chatState === 'idle' || chatState === 'ended')) {
         startChatSession();
         setInput('');
         return;
@@ -184,42 +174,27 @@ function AgentLiveChatContent() {
     setInput('');
     setIsLoading(true);
     
-    const history: MessageData[] = messages.map(msg => ({
-        role: msg.role,
-        content: [{ text: msg.text }]
-    }));
-    history.push({ role: 'user', content: [{ text: userMessageText }] });
+    const activeAccount = state.accounts.find(account => account.id === state.activeAccountId) || state.accounts[0];
+    const result = respondToLocalSupport(userMessageText, {
+        customerName: state.user.name,
+        account: activeAccount,
+        transactions: state.transactions.filter(transaction => !activeAccount || transaction.accountId === activeAccount.id),
+        payees: state.payees,
+        englishStyle: state.settings.agentEnglishStyle,
+    });
 
-    try {
-        const result = await agentChat({
-            userId: state.user.id,
-            user: {...state.user, accounts: state.accounts},
-            transactions: state.transactions,
-            payees: state.payees,
-            history: history,
-            agentName: agentName,
-            isVerified: isVerified
-        });
-        
-        simulateTyping(() => {
-            addMessage('model', result.response);
-            setIsVerified(result.isVerified);
-            if (result.endChat) {
-                setChatState('ended');
-                simulateTyping(() => {
-                   addMessage('system', 'Chat is closed.');
-                   setShowRating(true);
-                });
-            }
-        });
-
-    } catch (error) {
-        console.error("AI Error:", error);
-        simulateTyping(() => {
-             addMessage('model', "I'm sorry, but I'm having trouble connecting right now. Please try again later.");
-        });
-        toast({ variant: 'destructive', title: 'AI Error', description: 'Could not get a response from the AI agent.' });
-    }
+    // Responses are generated locally from the current browser state. No account
+    // details or chat messages are sent to an external AI or banking service.
+    simulateTyping(() => {
+        addMessage('model', result.response);
+        if (result.endChat) {
+            setChatState('ended');
+            simulateTyping(() => {
+                addMessage('system', 'Chat is closed.');
+                setShowRating(true);
+            });
+        }
+    });
   };
 
   return (
@@ -228,7 +203,7 @@ function AgentLiveChatContent() {
           <button onClick={() => router.back()}>
               <ArrowLeft className="h-6 w-6 text-accent" />
           </button>
-          <h1 className="text-xl font-semibold">Live Chat</h1>
+          <h1 className="text-xl font-semibold">Support Chat</h1>
           <Link href="/dashboard">
                 <Home className="h-6 w-6 text-accent" />
           </Link>
@@ -239,14 +214,14 @@ function AgentLiveChatContent() {
               <div className="flex flex-col items-center justify-center text-center text-gray-500 h-full p-8">
                   <MessageSquare className="h-12 w-12 text-gray-300 mb-4" />
                   <h2 className="text-lg font-semibold">Start a Conversation</h2>
-                  <p className="text-sm">Type &apos;Hi&apos; in the message box below to connect with an agent.</p>
+                  <p className="text-sm">Type &apos;Hi&apos; to start local support. No live agent or bank system is connected.</p>
               </div>
           )}
           {messages.map(message => (
             <div key={message.id} className={cn('flex w-full items-end gap-2', message.role === 'user' ? 'justify-end' : 'justify-start')}>
               {message.role === 'model' && (
                 <Avatar className="h-8 w-8">
-                   <AvatarImage src={state.settings.agentAvatar} />
+                   {isLocalImageSource(state.settings.agentAvatar) && <AvatarImage src={state.settings.agentAvatar} />}
                   <AvatarFallback><Bot /></AvatarFallback>
                 </Avatar>
               )}
@@ -267,7 +242,7 @@ function AgentLiveChatContent() {
           {isLoading && (
             <div className="flex items-end gap-2 justify-start">
               <Avatar className="h-8 w-8">
-                <AvatarImage src={state.settings.agentAvatar} />
+                {isLocalImageSource(state.settings.agentAvatar) && <AvatarImage src={state.settings.agentAvatar} />}
                 <AvatarFallback><Bot /></AvatarFallback>
               </Avatar>
               <div className="bg-muted rounded-lg px-4 py-3">
@@ -295,7 +270,7 @@ function AgentLiveChatContent() {
             onKeyDown={e => e.key === 'Enter' && !isLoading && handleSend()}
             placeholder={
                 chatState === 'ended' ? "Chat ended. Type 'Hi' to restart." :
-                chatState === 'idle' ? "Type 'Hi' to start a chat..." :
+                chatState === 'idle' ? "Type 'Hi' to start local support..." :
                 "Type a message..."
             }
             disabled={isLoading}

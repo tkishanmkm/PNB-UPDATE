@@ -16,6 +16,8 @@ import { RupeeIcon } from '@/components/rupee-icon';
 
 import { amountToIndianWords } from '@/lib/amount-to-words';
 import { getActiveAccount } from '@/lib/accounts';
+import { LocalDemoNotice } from '@/components/local-demo-notice';
+import { isLocalImageSource } from '@/lib/local-image';
 
 type Step = 'summary' | 'tpin';
 
@@ -104,7 +106,8 @@ function ConfirmTransferPage() {
                     </button>
                     <h1 className="text-xl font-semibold ml-4">Confirm your transfer</h1>
                 </header>
-                <main className="flex-1 flex flex-col justify-start items-start p-6 pt-16 text-left">
+                <LocalDemoNotice className="mx-4" />
+                <main className="flex-1 flex flex-col justify-start items-start p-6 pt-8 text-left">
                     <div className="w-full max-w-xs">
                         <p className="text-base text-gray-700 mb-2">Please enter your 4 digit TPIN</p>
                         <div 
@@ -150,7 +153,8 @@ function ConfirmTransferPage() {
                 </Link>
             </header>
             <main className="flex-1 p-3 space-y-3">
-                <p className="text-xs text-gray-700">Confirm below details to transfer funds</p>
+                <LocalDemoNotice className="mx-0 mt-0" />
+                <p className="text-xs text-gray-700">Confirm the local demonstration record below. No payment will be submitted.</p>
 
                 <Card>
                     <CardContent className="p-3 divide-y">
@@ -158,7 +162,7 @@ function ConfirmTransferPage() {
                             <div>
                                 <span className="font-semibold text-xs text-gray-800">{state.user.name}</span>
                                 <div className="flex items-center justify-end gap-2 mt-1">
-                                    <Image src={appLogo} alt="Bank Logo" width={16} height={16} />
+                                    <Image src={isLocalImageSource(appLogo) ? appLogo : '/pnb-splash/pnb-logo.png'} alt="Bank Logo" width={16} height={16} />
                                     <span className="text-xs text-gray-600">....{account.accountNumber.slice(-4)}</span>
                                 </div>
                             </div>

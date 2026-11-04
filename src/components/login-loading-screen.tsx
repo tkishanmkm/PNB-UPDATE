@@ -4,6 +4,7 @@
 import React from 'react';
 import { useAppContext } from '@/hooks/use-app-store';
 import Image from 'next/image';
+import { isLocalImageSource } from '@/lib/local-image';
 
 const LoadingAnimation = () => (
     <div className="flex items-center justify-center space-x-2">
@@ -21,11 +22,14 @@ export const LoginLoadingScreen = () => {
     return (
         <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-background p-8">
             <div className="flex flex-col items-center justify-center text-center space-y-6">
-                 {state.settings.appLogo ? (
-                        <Image src={state.settings.appLogo} width={150} height={40} alt="PNB Logo" className="h-14 w-auto object-contain"/>
-                    ) : (
-                        <div className="w-[150px] h-[56px] bg-muted rounded-md" />
-                    )}
+                 <Image
+                    src={isLocalImageSource(state.settings.appLogo) ? state.settings.appLogo : '/pnb-splash/pnb-logo.png'}
+                    width={150}
+                    height={54}
+                    alt="Punjab National Bank"
+                    className="h-14 w-auto object-contain"
+                    unoptimized
+                />
                 <LoadingAnimation />
                 <p className="text-muted-foreground">Signing in...</p>
             </div>

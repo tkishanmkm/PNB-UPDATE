@@ -11,8 +11,8 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        body: ['"PT Sans"', 'sans-serif'],
-        headline: ['Poppins', 'sans-serif'],
+        body: ['Roboto', 'Arial', 'sans-serif'],
+        headline: ['Mukta', 'Roboto', 'Arial', 'sans-serif'],
       },
       colors: {
         background: 'hsl(var(--background))',

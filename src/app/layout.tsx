@@ -6,8 +6,8 @@ import { Toaster } from "@/components/ui/toaster"
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'PNB Pro',
-  description: 'A high-fidelity interactive mobile banking application prototype.',
+  title: 'PNB ONE — Local Data Manager',
+  description: 'A local browser-based PNB ONE interface reconstruction. Not connected to live bank systems.',
   icons: {
     icon: [
       { url: '/favicon.ico' },
@@ -38,9 +38,6 @@ export default function RootLayout({
             };
           }
         `}</Script>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=PT+Sans:wght@400;700&display=swap" rel="stylesheet" />
       </head>
       <body className="font-body antialiased">
         <div className="max-w-md mx-auto bg-background">

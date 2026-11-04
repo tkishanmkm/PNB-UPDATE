@@ -95,13 +95,44 @@ describe('full app backup normalization', () => {
     assert.equal(result.isStateInitialized, true);
   });
 
-  it('preserves current device PINs when the imported backup has invalid PIN values', () => {
+  it('never restores authentication secrets from JSON and keeps current device credentials', () => {
     const backup = validBackup();
-    backup.user.mpin = 'bad';
-    backup.user.tpin = 'also-bad';
-    const result = normalizeAppBackup(backup, defaults, { mpin: '4567', tpin: '7654' });
+    backup.user.mpin = '3456';
+    backup.user.tpin = '7890';
+    backup.settings = {
+      ...backup.settings,
+      pdfPassword: 'attacker-pdf-password',
+      loginPassword: 'attacker-login-password',
+      demoLoginOtp: '999999',
+    };
+    const result = normalizeAppBackup(backup, defaults, {
+      mpin: '4567',
+      tpin: '7654',
+      pdfPassword: 'local-pdf-password',
+      loginPassword: 'local-login-password',
+      demoLoginOtp: '123456',
+    });
     assert.equal(result.user.mpin, '4567');
     assert.equal(result.user.tpin, '7654');
+    assert.equal(result.settings.pdfPassword, 'local-pdf-password');
+    assert.equal(result.settings.loginPassword, 'local-login-password');
+    assert.equal(result.settings.demoLoginOtp, '123456');
+  });
+
+  it('does not import credential fields when no local device credentials are supplied', () => {
+    const backup = validBackup();
+    backup.settings = {
+      ...backup.settings,
+      pdfPassword: 'should-not-import',
+      loginPassword: 'should-not-import',
+      demoLoginOtp: '654321',
+    };
+    const result = normalizeAppBackup(backup, defaults);
+    assert.equal(result.user.mpin, defaults.user.mpin);
+    assert.equal(result.user.tpin, defaults.user.tpin);
+    assert.equal(result.settings.pdfPassword, undefined);
+    assert.equal(result.settings.loginPassword, undefined);
+    assert.equal(result.settings.demoLoginOtp, undefined);
   });
 
   it('rejects malformed account balances and negative manual quarterly overrides', () => {

@@ -117,21 +117,60 @@ const generatePdfDataUri = async (props: StatementPDFProps): Promise<string> => 
         const summaryLine = 'Statement of Account: ' + account.accountNumber + ' For Period: ' + format(period.from, 'dd/MM/yyyy') + ' to ' + format(period.to, 'dd/MM/yyyy');
         const summaryLines = doc.splitTextToSize(summaryLine, pageWidth - margin * 2);
         const summaryHeight = detailHeight * Math.max(1, summaryLines.length);
-        ensureHeaderSpace(summaryHeight + detailHeight);
-        doc.text(summaryLines, margin, yPos);
+        const chronological = [...transactions].sort((left, right) =>
+            new Date(left.date).getTime() - new Date(right.date).getTime(),
+        );
+        const totalCredits = transactions.reduce((total, tx) =>
+            total + (tx.type === 'credit' ? Math.abs(tx.amount) : 0), 0,
+        );
+        const totalDebits = transactions.reduce((total, tx) =>
+            total + (tx.type === 'debit' ? Math.abs(tx.amount) : 0), 0,
+        );
+        const firstTransaction = chronological[0];
+        const lastTransaction = chronological[chronological.length - 1];
+        const firstSignedAmount = firstTransaction
+            ? (firstTransaction.type === 'credit' ? Math.abs(firstTransaction.amount) : -Math.abs(firstTransaction.amount))
+            : 0;
+        const openingBalance = firstTransaction
+            ? firstTransaction.balance - firstSignedAmount
+            : null;
+        const closingBalance = lastTransaction?.balance ?? null;
+        const money = (value: number) => new Intl.NumberFormat('en-IN', {
+            style: 'currency',
+            currency: 'INR',
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+        }).format(value);
 
-        finalYPos = yPos + summaryHeight + detailHeight;
+        const summaryRows = [
+            `Opening Balance: ${openingBalance === null ? 'Not available' : money(openingBalance)}`,
+            `Total Credits: ${money(totalCredits)}`,
+            `Total Debits: ${money(totalDebits)}`,
+            `Closing Balance: ${closingBalance === null ? 'Not available' : money(closingBalance)}`,
+        ];
+        ensureHeaderSpace(summaryHeight + 18 + detailHeight);
+        doc.text(summaryLines, margin, yPos);
+        yPos += summaryHeight + 5;
+        doc.setFont('times', 'normal');
+        doc.setFontSize(9);
+        doc.text(summaryRows.slice(0, 2).join('     '), margin, yPos);
+        yPos += 5;
+        doc.text(summaryRows.slice(2).join('     '), margin, yPos);
+
+        finalYPos = yPos + detailHeight;
     };
 
     const renderTable = (dataRows: (Transaction & { balance: number })[], startY: number) => {
-        const tableColumn = ["Date", "Instrument ID", "Amount", "Type", "Balance", "Remarks"];
+        const tableColumn = ["Date", "Instrument ID", "Debit (₹)", "Credit (₹)", "Balance (₹)", "Remarks"];
+        const amountFormatter = new Intl.NumberFormat('en-IN', { useGrouping: true, minimumFractionDigits: 2, maximumFractionDigits: 2 });
         const tableRows = dataRows.map(tx => {
+            const amount = amountFormatter.format(Math.abs(tx.amount));
             return [
                 format(new Date(tx.date), 'dd/MM/yyyy'),
                 tx.instrumentId || '',
-                new Intl.NumberFormat('en-IN', { useGrouping: false, minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(Math.abs(tx.amount)),
-                tx.type === 'credit' ? 'CR' : 'DR',
-                new Intl.NumberFormat('en-IN', { useGrouping: true, minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(tx.balance || 0),
+                tx.type === 'debit' ? amount : '',
+                tx.type === 'credit' ? amount : '',
+                amountFormatter.format(tx.balance || 0),
                 tx.description || '',
             ];
         });
@@ -177,12 +216,12 @@ const generatePdfDataUri = async (props: StatementPDFProps): Promise<string> => 
             // Keep each bank transaction together when remarks wrap across lines.
             rowPageBreak: 'avoid',
             columnStyles: {
-                0: { halign: 'center', cellWidth: 22 },
-                1: { halign: 'left', cellWidth: 35 },
-                2: { halign: 'center', cellWidth: 25 },
-                3: { halign: 'center', cellWidth: 15 },
-                4: { halign: 'center', cellWidth: 35 },
-                5: { halign: 'left', cellWidth: 58 },
+                0: { halign: 'center', cellWidth: 20 },
+                1: { halign: 'left', cellWidth: 27 },
+                2: { halign: 'right', cellWidth: 24 },
+                3: { halign: 'right', cellWidth: 24 },
+                4: { halign: 'right', cellWidth: 30 },
+                5: { halign: 'left', cellWidth: 65 },
             },
             showHead: 'everyPage',
         });
@@ -190,7 +229,28 @@ const generatePdfDataUri = async (props: StatementPDFProps): Promise<string> => 
     
     addHeader();
     renderTable([...transactions].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()), finalYPos);
-    
+
+    // Distinguish this browser-generated report from any official statement.
+    const generatedPageCount = doc.getNumberOfPages();
+    for (let pageNumber = 1; pageNumber <= generatedPageCount; pageNumber++) {
+        doc.setPage(pageNumber);
+        const pageHeight = doc.internal.pageSize.getHeight();
+        doc.setDrawColor(170, 170, 170);
+        doc.setLineWidth(0.15);
+        doc.line(margin, pageHeight - 13, pageWidth - margin, pageHeight - 13);
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(7);
+        doc.setTextColor(95, 95, 95);
+        doc.text('Locally generated PNB ONE report — not an official bank statement', margin, pageHeight - 8);
+        doc.text(`Page ${pageNumber} of ${generatedPageCount}`, pageWidth - margin, pageHeight - 8, { align: 'right' });
+    }
+    doc.setProperties({
+        title: 'PNB ONE local statement report',
+        subject: 'Locally generated report. Not an official bank statement.',
+        author: 'PNB ONE local application',
+        creator: 'PNB ONE local application',
+    });
+
     if (lastPagePdfDataUri) {
         try {
             const pdfjsLib = await import('pdfjs-dist');

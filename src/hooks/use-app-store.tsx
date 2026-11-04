@@ -7,6 +7,7 @@ import { getStateFromIndexedDB, saveStateToIndexedDB, clearStateFromIndexedDB } 
 import { reconcileTransactionRemoval, reconcileTransactionUpdate } from '@/lib/transaction-ledger';
 import { resolveAccountId, resolveStatementAccountId } from '@/lib/accounts';
 import { sortTransactionsNewestFirst } from '@/lib/transaction-order';
+import { planStatementAppend, validateStatementReplacement } from '@/lib/statement-import';
 
 // Define a new context shape to include appData and setAppData
 const AppContext = createContext<{
@@ -125,32 +126,62 @@ const appReducer = (state: AppState, action: Action): AppState => {
         saveStateToIndexedDB(newState).catch(err => console.error("Failed to persist completed transfer", err));
         return newState;
     }
-    case 'REPLACE_STATEMENT_DATA': {
+    case 'REPLACE_APP_DATA': {
         const { account, transactions } = action.payload;
         const resolvedAccountId = resolveStatementAccountId(state.accounts, account.accountNumber, account.id);
         const resolvedAccount = { ...account, id: resolvedAccountId };
-        const accountExists = state.accounts.some(item => item.id === resolvedAccountId);
-        const accounts = accountExists
-            ? state.accounts.map(item => item.id === resolvedAccountId ? resolvedAccount : item)
-            : [...state.accounts, resolvedAccount];
-        const accountTransactions = transactions.map(tx => ({ ...tx, accountId: resolvedAccountId }));
+        const replacementTransactions = validateStatementReplacement(
+            transactions.map(transaction => ({ ...transaction, accountId: resolvedAccountId })),
+            resolvedAccountId,
+        );
+        // Statement replacement changes only statement-supported customer/account
+        // fields and the ledger. Payees, support history, app branding and settings
+        // remain local and are deliberately preserved.
+        const accounts = [resolvedAccount];
         const newState: AppState = {
             ...state,
             accounts,
             activeAccountId: resolvedAccountId,
-            transactions: sortTransactionsNewestFirst([
-                ...state.transactions.filter(tx => tx.accountId !== resolvedAccountId),
-                ...accountTransactions,
-            ]),
-            user: { ...state.user, name: resolvedAccount.accountHolder, accounts },
-            // A statement replaces account and ledger data only; unrelated payees
-            // and support history remain available after a new statement is imported.
-            payees: state.payees,
-            chatHistory: state.chatHistory,
+            transactions: sortTransactionsNewestFirst(replacementTransactions),
+            user: { ...state.user, name: resolvedAccount.accountHolder || state.user.name, accounts },
             currentTransfer: {},
         };
-        saveStateToIndexedDB(newState).catch(err => console.error("Failed to persist replacement statement data", err));
+        saveStateToIndexedDB(newState).catch(err => console.error("Failed to persist replacement app data", err));
         return newState;
+    }
+    case 'REPLACE_TRANSACTIONS_ONLY': {
+        const { accountId, transactions } = action.payload;
+        if (!state.accounts.some(account => account.id === accountId)) return state;
+        const replacementTransactions = validateStatementReplacement(transactions, accountId);
+        const newState: AppState = {
+            ...state,
+            transactions: sortTransactionsNewestFirst([
+                ...state.transactions.filter(transaction => transaction.accountId !== accountId),
+                ...replacementTransactions,
+            ]),
+            activeAccountId: accountId,
+            currentTransfer: {},
+        };
+        saveStateToIndexedDB(newState).catch(err => console.error("Failed to persist transaction-only replacement", err));
+        return newState;
+    }
+    case 'SAVE_TRANSACTIONS': {
+        const { accountId, transactions } = action.payload;
+        if (!state.accounts.some(account => account.id === accountId)) return state;
+        try {
+            const plan = planStatementAppend(state.transactions, transactions, accountId);
+            if (!plan.added.length) return state;
+            const newState: AppState = {
+                ...state,
+                transactions: sortTransactionsNewestFirst([...state.transactions, ...plan.added]),
+                activeAccountId: accountId,
+            };
+            saveStateToIndexedDB(newState).catch(err => console.error("Failed to persist appended statement transactions", err));
+            return newState;
+        } catch (error) {
+            console.error("Statement transaction append rejected", error);
+            return state;
+        }
     }
     case 'UPDATE_TRANSACTIONS': {
         const ids = new Set(action.payload.map(transaction => transaction.id));
@@ -248,11 +279,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             parsedState.loginPending = false;
             parsedState.isLoggingOut = false;
             dispatch({ type: 'INITIALIZE_STATE', payload: parsedState });
-            // Keep recovered localStorage data even when Safari refuses IndexedDB access.
+            // One-time migration for older installations; new state is persisted only in IndexedDB.
             try {
               await saveStateToIndexedDB(parsedState);
+              window.localStorage.removeItem(LOCAL_STORAGE_KEY);
             } catch (indexedDbError) {
-              console.warn('Recovered app state from localStorage; IndexedDB remains unavailable.', indexedDbError);
+              console.warn('Recovered app state from legacy localStorage, but IndexedDB remains unavailable.', indexedDbError);
             }
           } else {
             dispatch({ type: 'INITIALIZE_STATE', payload: defaultState });
@@ -280,14 +312,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           saveStateToIndexedDB(stateToSave).catch(err => {
             console.error("Failed to persist state update to IndexedDB", err);
           });
-          try {
-            window.localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(stateToSave));
-          } catch (storageError) {
-            // Keep the app usable when Safari blocks localStorage; IndexedDB remains primary.
-            console.warn('Could not persist localStorage fallback.', storageError);
-          }
         } catch (error) {
-          console.error("Failed to save state to localStorage", error);
+          console.error("Failed to prepare local IndexedDB state", error);
         }
     }
   }, [state]);
