@@ -316,3 +316,20 @@ The Pay & Transfer group header uses the separately named `allservices_pay.png` 
 - Profile tile mappings not listed above remain unchanged.
 - Named page illustrations are not substituted for small menu glyphs merely because their filenames are similar.
 - The Cards, Cheque, Tax Related and Others category icons exist, but their expanded runtime screens were not supplied. No expanded item tree is inferred from category art alone.
+
+## 9. Implementation addendum � remaining Services category artwork (2026-11-04)
+
+The separate offline preview project at C:\Users\theki\PNB-ONE-UI-PREVIEW\assets\www\img\ contains original extracted PNG artwork copied from the user-supplied APK extraction (see that project's README). The following four named category assets were copied unchanged into PNB-UPDATE and are now used only as the matching Services category header images:
+
+| Services category | Source asset | PNB-UPDATE destination |
+|---|---|---|
+| Manage Cards | category-cards.png | service-categories/icons_allservices_cards.png |
+| Cheque Services | category-cheque.png | service-categories/icons_allservices_cheque.png |
+| Tax Related | category-tax.png | service-categories/icons_allservices_tax.png |
+| Others | category-other.png | service-categories/icons_allservices_other.png |
+
+The Services accordion now exposes the four category labels and a catalogue of extracted service labels. The labels and candidate groupings are not all backed by expanded-category screenshots: Cheque Services has a six-item help-text list; Other Services explicitly references Register/Update Nominee; Tax labels are present in the string table; the remaining card/other placements are catalogue-level evidence only. Exact hierarchy, row order and page layout are therefore still unverified.
+
+Seventeen additional named feature illustrations were copied into public/pnb-one-ui/apk-mapped/service-page-illustrations/. They are retained as references for their correspondingly named feature pages, not used as small Services tile glyphs. This distinction avoids treating a page illustration as an exact menu icon. The 54 numbered service glyphs remain unmapped except for the previously documented screenshot matches.
+
+No individual card, cheque, tax or other action page is claimed to be reconstructed pixel-for-pixel; no banking action or backend behavior was added.

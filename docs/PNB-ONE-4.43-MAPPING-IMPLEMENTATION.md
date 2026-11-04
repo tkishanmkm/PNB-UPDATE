@@ -50,9 +50,14 @@
 - The APK has 54 numbered `serviceIcon_1…serviceIcon_54` resources. Sixteen distinct numbered glyphs are used in the Services/Profile mappings above. The remaining numbered glyphs have no proven title-to-icon crosswalk; the four previously missing visible tile glyphs were cropped directly from the original Services screenshot instead.
 - No Pay & Transfer tile visible in the supplied Services screenshot remains without a matching visual. The four screenshot-cropped glyphs are documented separately from standalone APK assets.
 - Several Profile Settings tile icons remain unresolved, including Change MPIN, Set/Reset TPIN, De-activation, Set Account Nickname, Promotional Content Preference, Modify Account Access, Set Limits, Quick View Balance, My Account, All Accounts, Contact Us, and App Settings.
-- Cards, Cheque, Tax Related, and Others category artwork exists in the APK, but their expanded page screenshots were not supplied. Their category icons are not substituted into unverified sections.
+- The four remaining Services category header images are now mapped from the extracted APK. Their expanded page screenshots, exact item order and exact small tile glyphs remain unresolved.
 - Only six original screens are screenshot-backed: Dashboard, Services, Profile Settings, Government Schemes, Invest, and Send Money. The main registration flow is text-backed; the MPIN login is string/resource-backed but has no supplied screenshot. Other web routes are not claimed to be exact APK screen reconstructions.
 
 ## Safety and scope
 - Registration, MPIN, transfer and other bank actions remain local/demo-only. No PNB authentication, OTP, card validation, payment, or bank API is invoked.
 - Only the PNB-UPDATE worktree is changed. No PNB-, Paxones/CleanP2P, BOB-NEW, Fino, or other project is included.
+### Additional Services categories
+- Mapped the four remaining category header images from the extracted APK artwork: Manage Cards, Cheque Services, Tax Related and Others.
+- Added the extracted category labels and candidate child-service catalogue entries to the Services accordion. The labels are source-evidenced, but the full expanded-screen screenshots and exact item order are not available; this is a catalogue reconstruction, not a claim of pixel-identical original category pages.
+- Kept unresolved child tile glyphs as generic placeholders. Did not assign any of the 54 numbered serviceIcon_N files without a verified title crosswalk.
+- Preserved 17 matching named feature illustrations separately under service-page-illustrations/. These are page/feature artwork, not asserted to be the small menu tile glyphs.
